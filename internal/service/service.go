@@ -3,7 +3,8 @@ package service
 import (
 	"context"
 	ds "team-task-manager/internal/datastruct"
-	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 const (
@@ -26,13 +27,15 @@ type ICachedState interface {
 	SetCached(bool)
 }
 
-type IStorage interface {
-	AddNewUser(*ds.RegisterRequest) (*ds.RegisterResponse, error)
-	GetAuthIdentitiesByLogin(login string) (*ds.DBAuthIdentities, error)
-	GetAuthIdentitiesByUserID(id int64) (*ds.DBAuthIdentities, error)
-	AddRefreshToken(ident *ds.DBAuthIdentities, toket string, expire time.Time) error
+type IAuthStorage interface {
+	AddNewUser(*ds.DBRegisterRequest) (*ds.RegisterResponse, error)
+	GetAuthIdentitiesByUserID(id int64) (*ds.AuthIdentities, bool, error)
+	GetAuthIdentitiesByLogin(login string) (*ds.AuthIdentities, bool, error)
+	AddRefreshToken(*ds.DBRefreshToken) error
 	GetRefreshToken(token string) (*ds.DBRefreshToken, bool, error)
-	DeleteRefreshToken(token string) error
+	UpdateRefreshToken(*ds.DBUpdateRefreshToken) error
+	CleanupUslessTokens() error
+	DeleteAllUserSession(userId int64) error
 }
 
 type ISecretProvider interface {
@@ -40,23 +43,34 @@ type ISecretProvider interface {
 }
 
 type Service struct {
-	ctx     context.Context
-	logger  ILogger
-	cache   ICache
-	storage IStorage
-	secret  ISecretProvider
+	ctx         context.Context
+	logger      ILogger
+	cache       ICache
+	storageAuth IAuthStorage
+	secret      ISecretProvider
+	cron        *cron.Cron
 }
 
-func NewService(ctx context.Context, s IStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
-	return buildService(ctx, s, l, c, sp)
+func NewService(ctx context.Context, as IAuthStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
+	s := buildService(ctx, as, l, c, sp)
+
+	s.cron = cron.New()
+	s.cron.AddFunc("0 0 * * *", func() {
+		err := s.storageAuth.CleanupUslessTokens()
+		if err != nil {
+			s.logger.ErrorKV("CleanupUslessTokens", "error", err)
+		}
+	})
+
+	return s
 }
 
-func buildService(ctx context.Context, s IStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
+func buildService(ctx context.Context, as IAuthStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
 	return &Service{
-		ctx:     ctx,
-		logger:  l,
-		cache:   c,
-		storage: s,
-		secret:  sp,
+		ctx:         ctx,
+		logger:      l,
+		cache:       c,
+		storageAuth: as,
+		secret:      sp,
 	}
 }

@@ -1,0 +1,196 @@
+basePath: /api/v1
+definitions:
+  datastruct.LoginRequest:
+    properties:
+      login:
+        example: VaKadyk359
+        type: string
+      password:
+        example: Xldf32Q
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  datastruct.LoginResponse:
+    properties:
+      access_token:
+        example: '-'
+        type: string
+      status:
+        example: status message
+        type: string
+    type: object
+  datastruct.RefreshResponse:
+    properties:
+      access_token:
+        example: '-'
+        type: string
+      status:
+        example: status message
+        type: string
+    type: object
+  datastruct.RegisterRequest:
+    properties:
+      login:
+        example: VaKadyk359
+        type: string
+      name:
+        example: Vasilisa
+        type: string
+      password:
+        example: Xldf32Q
+        type: string
+    required:
+    - login
+    - name
+    - password
+    type: object
+  datastruct.RegisterResponse:
+    properties:
+      status:
+        example: status message
+        type: string
+    type: object
+  datastruct.Status:
+    properties:
+      status:
+        example: status message
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: hhullen@gmail.com
+    name: Maksim
+    url: https://github.com/hhullen
+  description: Service for managing teams and tasks
+  license:
+    name: Creative Commons Attribution-NonCommercial 4.0 International Public License
+    url: https://creativecommons.org/licenses/by-nc/4.0/deed.en
+  termsOfService: http://swagger.io/terms/
+  title: Team Task Managere
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: login user.
+      parameters:
+      - description: login and password
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      summary: login user
+      tags:
+      - Auth
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: refresh tokens.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.RefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      summary: refresh tokens
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: register new user.
+      parameters:
+      - description: login and password and info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      summary: register new user
+      tags:
+      - Auth
+  /teams:
+    post:
+      consumes:
+      - application/json
+      description: create new team.
+      parameters:
+      - description: login and password and info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      security:
+      - BearerAuth: []
+      summary: create new team
+      tags:
+      - Teams
+securityDefinitions:
+  BearerAuth:
+    description: Type 'Bearer <token>' to authenticate
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

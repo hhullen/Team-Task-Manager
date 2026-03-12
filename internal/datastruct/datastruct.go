@@ -25,12 +25,12 @@ func (a *AvoidCacheFlag) AvoidCache() bool {
 }
 
 const (
-	StatusOK                   = "Success"
+	StatusSuccess              = "ok"
 	StatusNotFound             = "resource not found"
 	StatusAlreadyExists        = "resource already exists"
 	StatusUserAlreadyExists    = "user already exists"
 	StatusWrongLoginOrPassword = "wrong login or password"
 	StatusInvalidToken         = "invalid token"
-	StatusRefreshTokenReset    = "refresh token have been reset"
+	StatusSessionReset         = "session have been reset"
 	StatusServiceError         = "service failed exec request"
 )

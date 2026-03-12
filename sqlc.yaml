@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - schema: "migrations/mysql"
+    queries: "internal/clients/mysql"
+    engine: "mysql"
+    gen:
+      go:
+        emit_interface: true
+        package: "sqlc"
+        out: "internal/clients/mysql/sqlc"

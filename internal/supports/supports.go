@@ -4,10 +4,13 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -29,6 +32,12 @@ var hashSettings = HashSettings{
 	threads:    4,
 	saltLength: 16,
 	keyLength:  32,
+}
+
+var validatorInstance validator.Validate = *validator.New()
+
+func StructValidator() *validator.Validate {
+	return &validatorInstance
 }
 
 func ArgonHash(s string) (string, error) {
@@ -108,4 +117,57 @@ func ParseParams(paramsStr string) (m, t uint32, p uint8, err error) {
 		}
 	}
 	return m, t, p, nil
+}
+
+func Concat(ss ...string) string {
+	length := 0
+	for i := range ss {
+		length += len(ss[i])
+	}
+
+	var b strings.Builder
+	b.Grow(length)
+
+	for i := range ss {
+		b.WriteString(ss[i])
+	}
+
+	return b.String()
+}
+
+func ReadSecretFile(path string) (string, error) {
+	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		return "", err
+	}
+
+	secret := ""
+	_, err = fmt.Fscan(f, &secret)
+	if err != nil {
+		return "", err
+	}
+
+	return string(secret), nil
+}
+
+func IsInContainer() bool {
+	return os.Getenv("RUNNING_IN_CONTAINER") == "true"
+}
+
+func MakeKVMessagesJSON(kvs ...any) (bytes []byte, err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			err = fmt.Errorf("failed MakeKVMessagesJSON: %v", p)
+		}
+	}()
+
+	msgs := map[string]any{}
+	for i := 0; i < len(kvs)-1; i += 2 {
+		key := fmt.Sprint(kvs[i])
+		value := kvs[i+1]
+		msgs[key] = value
+	}
+
+	bytes, err = json.Marshal(msgs)
+	return
 }

@@ -1,0 +1,121 @@
+name: team_task_manager
+
+services:
+  team_task_manager:
+    container_name: team_task_manager
+    build:
+      context: .
+      dockerfile: ./cmd/team_task_manager/Dockerfile
+    ports:
+      - 8080:8080
+    init: true
+    restart: always
+    secrets:
+      - db_name
+      - db_host
+      - db_port
+      - db_app_password
+      - db_app_user
+      - redis_password
+      - redis_host
+      - redis_port
+      - jwt_secret
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - team_task_manager_network
+
+  migrator:
+    container_name: migrator
+    build:
+      context: .
+      dockerfile: ./cmd/migrator/Dockerfile
+    restart: on-failure
+    secrets:
+      - db_migrator_password
+      - db_migrator_user
+      - db_name
+      - db_host
+      - db_port
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - team_task_manager_network
+
+  db:
+    container_name: db
+    image: mysql:8.0.45-debian
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_DATABASE_FILE: /run/secrets/db_name
+    secrets:
+      - db_root_password
+      - db_app_user
+      - db_app_password
+      - db_migrator_password
+      - db_migrator_user
+      - db_name
+    volumes:
+      - team_task_manager_mysql_data:/var/lib/mysql
+      - ./init/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+      - ./init/init_roles.sql:/sql_init/init_roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$(cat /run/secrets/root_password) || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - team_task_manager_network
+
+  redis_cache:
+    container_name: redis_cache
+    image: redis:8.2.4-alpine3.22
+    restart: always
+    command: >
+      sh -c "redis-server --requirepass $$(cat /run/secrets/redis_password) --appendonly yes"
+    secrets:
+      - redis_password
+      - redis_port
+      - redis_host
+    volumes:
+      - team_task_manager_redis_data:/data
+    networks:
+      - team_task_manager_network
+
+secrets:
+  db_root_password:
+    file: ./secrets/db_root_password.txt
+  db_app_password:
+    file: ./secrets/db_app_password.txt
+  db_app_user:
+    file: ./secrets/db_app_user.txt
+  db_migrator_password:
+    file: ./secrets/db_migrator_password.txt
+  db_migrator_user:
+    file: ./secrets/db_migrator_user.txt
+  db_name:
+    file: ./secrets/db_name.txt
+  db_host:
+    file: ./secrets/db_host.txt
+  db_port:
+    file: ./secrets/db_port.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  redis_host:
+    file: ./secrets/redis_host.txt
+  redis_port:
+    file: ./secrets/redis_port.txt
+  jwt_secret:
+    file: ./secrets/JWT_SECRET
+
+volumes:
+  team_task_manager_postgres_data:
+  team_task_manager_redis_data:
+
+networks:
+  team_task_manager_network:
+    driver: bridge

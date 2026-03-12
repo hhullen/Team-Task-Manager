@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"team-task-manager/internal/supports"
 	"time"
 
@@ -11,20 +12,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
-
-const (
-	defaultAccessTokenTTL  = time.Minute * 15
-	defaultRefreshTokenTTL = time.Hour * 24 * 7
-	defaultDeleteRTDelay   = time.Second * 30
-
-	jwtSecretKey = "JWT_SECRET"
-)
-
-type RegisteredClaims struct {
-	jwt.RegisteredClaims
-	Role   string
-	UserId int64
-}
 
 func (s *Service) RegisterUser(req *ds.RegisterRequest) *ds.RegisterResponse {
 	hashPassword, err := supports.ArgonHash(req.Password)
@@ -35,7 +22,11 @@ func (s *Service) RegisterUser(req *ds.RegisterRequest) *ds.RegisterResponse {
 
 	req.Password = hashPassword
 
-	res, err := s.storage.AddNewUser(req)
+	res, err := s.storageAuth.AddNewUser(&ds.DBRegisterRequest{
+		UserCreds: req.UserCreds,
+		UserInfo:  req.UserInfo,
+		Role:      ds.RoleUser,
+	})
 	if err != nil {
 		s.logger.ErrorKV("RegisterUser.InsertNewUser", "error", err.Error())
 		return nil
@@ -45,9 +36,13 @@ func (s *Service) RegisterUser(req *ds.RegisterRequest) *ds.RegisterResponse {
 }
 
 func (s *Service) LoginUser(req *ds.LoginRequest) *ds.LoginResponse {
-	identities, err := s.storage.GetAuthIdentitiesByLogin(req.Login)
+	identities, exist, err := s.storageAuth.GetAuthIdentitiesByLogin(req.Login)
 	if err != nil {
 		s.logger.ErrorKV("LoginUser.GetAuthIdentitiesByLogin", "error", err.Error())
+	}
+
+	if !exist {
+		return &ds.LoginResponse{Status: ds.Status{Message: ds.StatusWrongLoginOrPassword}}
 	}
 
 	match, err := supports.IsStringArgonHash(req.Password, identities.Password)
@@ -64,9 +59,9 @@ func (s *Service) LoginUser(req *ds.LoginRequest) *ds.LoginResponse {
 		}
 	}
 
-	at, rt, err := s.getTokensPair(identities)
+	at, rt, err := s.createTokensPair(identities)
 	if err != nil {
-		s.logger.ErrorKV("LoginUser.getTokensPair", "error", err.Error())
+		s.logger.ErrorKV("LoginUser.createTokensPair", "error", err.Error())
 		return nil
 	}
 
@@ -78,39 +73,58 @@ func (s *Service) LoginUser(req *ds.LoginRequest) *ds.LoginResponse {
 
 func (s *Service) Refresh(req *ds.RefreshRequest) *ds.RefreshResponse {
 	oldRT := hashRefreshToken(req.RefreshToken.RefreshToken)
-	dbRT, exist, err := s.storage.GetRefreshToken(oldRT)
+	dbRT, exist, err := s.storageAuth.GetRefreshToken(oldRT)
 	if err != nil {
 		s.logger.ErrorKV("Refresh.GetRefreshToken", "error", err.Error())
 		return nil
 	}
 
-	if !exist || dbRT.Revoked || time.Now().After(dbRT.ExpiresAt) {
+	expired := time.Now().After(dbRT.ExpiresAt)
+	if !exist || dbRT.Revoked || (expired && !dbRT.Used) {
 		return &ds.RefreshResponse{
 			Status: ds.Status{Message: ds.StatusInvalidToken},
 		}
 	}
 
-	identities, err := s.storage.GetAuthIdentitiesByUserID(dbRT.UserID)
+	identities, exist, err := s.storageAuth.GetAuthIdentitiesByUserID(dbRT.UserID)
 	if err != nil {
 		s.logger.ErrorKV("Refresh.GetAuthIdentitiesByUserID", "error", err.Error())
 		return nil
 	}
 
-	at, rt, err := s.getTokensPair(identities)
-	if err != nil {
-		s.logger.ErrorKV("Refresh.getTokensPair", "error", err.Error())
+	if !exist {
+		s.logger.ErrorKV("Refresh.GetAuthIdentitiesByUserID",
+			"error", fmt.Sprintf("no found identities for user %d", dbRT.UserID))
 		return nil
 	}
 
-	go func() {
-		tt := time.NewTicker(defaultDeleteRTDelay)
-		<-tt.C
-		err := s.storage.DeleteRefreshToken(oldRT)
+	if expired && dbRT.Used {
+		err := s.storageAuth.DeleteAllUserSession(identities.UserID)
 		if err != nil {
-			s.logger.ErrorKV("Refresh.DeleteRefreshToken", "error", err.Error())
+			s.logger.ErrorKV("Refresh.DeleteAllUserSession", "error", err.Error())
+			return nil
 		}
-		tt.Stop()
-	}()
+		return &ds.RefreshResponse{
+			Status: ds.Status{Message: ds.StatusSessionReset},
+		}
+	}
+
+	err = s.storageAuth.UpdateRefreshToken(&ds.DBUpdateRefreshToken{
+		RefreshToken: dbRT.RefreshToken,
+		ExpiresAt:    time.Now().Add(ds.DefaultRefreshTokenGracePeriod),
+		Used:         true,
+		Revoked:      false,
+	})
+	if err != nil {
+		s.logger.ErrorKV("Refresh.UpdateRefreshToken", "error", err.Error())
+		return nil
+	}
+
+	at, rt, err := s.createTokensPair(identities)
+	if err != nil {
+		s.logger.ErrorKV("Refresh.createTokensPair", "error", err.Error())
+		return nil
+	}
 
 	return &ds.RefreshResponse{
 		AccessToken:  ds.AccessToken{AccessToken: at},
@@ -118,27 +132,32 @@ func (s *Service) Refresh(req *ds.RefreshRequest) *ds.RefreshResponse {
 	}
 }
 
-func (s *Service) getTokensPair(identities *ds.DBAuthIdentities) (at string, rt string, err error) {
+func (s *Service) createTokensPair(identities *ds.AuthIdentities) (at string, rt string, err error) {
 	rt = rand.Text()
-	err = s.storage.AddRefreshToken(identities,
-		hashRefreshToken(rt), time.Now().Add(defaultRefreshTokenTTL))
+	err = s.storageAuth.AddRefreshToken(&ds.DBRefreshToken{
+		RefreshToken: ds.RefreshToken{RefreshToken: hashRefreshToken(rt)},
+		ExpiresAt:    time.Now().Add(ds.DefaultRefreshTokenTTL),
+		UserID:       identities.UserID,
+		Revoked:      false,
+		Used:         false,
+	})
 	if err != nil {
 		return
 	}
 
 	now := time.Now()
-	claim := RegisteredClaims{
+	claim := ds.RegisteredClaims{
 		UserId: identities.UserID,
 		Role:   identities.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    serviceName,
-			ExpiresAt: jwt.NewNumericDate(now.Add(defaultAccessTokenTTL)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ds.DefaultAccessTokenTTL)),
 			NotBefore: jwt.NewNumericDate(now),
 			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
 
-	sing, err := s.secret.ReadSecret(jwtSecretKey)
+	sing, err := s.secret.ReadSecret(ds.JWTSecretKey)
 	if err != nil {
 		return
 	}
