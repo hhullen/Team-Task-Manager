@@ -9,8 +9,8 @@ import (
 const (
 	JWTSecretKey = "JWT_SECRET"
 
-	RoleKey   = "role"
-	UserIDKey = "user_id"
+	UserRoleKey = "role"
+	UserIDKey   = "user_id"
 
 	RoleUser  = "user"
 	RoleAdmin = "admin"
@@ -29,11 +29,23 @@ type UserInfo struct {
 	Name string `json:"name" validate:"required" example:"Vasilisa"`
 }
 
+type JWTCreds struct {
+	Role   string `swaggerignore:"true"`
+	UserID int64  `swaggerignore:"true"`
+}
+
+func (c *JWTCreds) SetUserRole(r string) {
+	c.Role = r
+}
+
+func (c *JWTCreds) SetUserId(id int64) {
+	c.UserID = id
+}
+
 type AuthIdentities struct {
+	JWTCreds
 	UserCreds
 	UserInfo
-	Role   string
-	UserID int64
 }
 
 type AccessToken struct {
@@ -41,7 +53,7 @@ type AccessToken struct {
 }
 
 type RefreshToken struct {
-	RefreshToken string `json:"-,omitempty" validate:"required" example:"-"`
+	RefreshToken string `validate:"required" example:"-" swaggerignore:"true"`
 }
 
 type DBRefreshToken struct {
@@ -59,15 +71,15 @@ type DBUpdateRefreshToken struct {
 	Used      bool
 }
 
-type RegisterRequest struct {
-	UserCreds
-	UserInfo
-}
-
 type DBRegisterRequest struct {
 	UserCreds
 	UserInfo
 	Role string
+}
+
+type RegisterRequest struct {
+	UserCreds
+	UserInfo
 }
 
 type RegisterResponse struct {

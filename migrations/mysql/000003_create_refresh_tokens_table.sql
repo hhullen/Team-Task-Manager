@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     revoked TINYINT(1) NOT NULL DEFAULT 0,
     used TINYINT(1) NOT NULL DEFAULT 0,
 
-    CONSTRAINT fk_refresh_token_user
+    CONSTRAINT fk_user_refresh_token
     FOREIGN KEY (user_id)
     REFERENCES users_auth(id)
     ON DELETE CASCADE

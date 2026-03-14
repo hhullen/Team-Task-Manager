@@ -79,6 +79,7 @@ func Migrate(command string) {
 	if err != nil {
 		log.Fatalf("failed to open DB: %v", err)
 	}
+	defer db.Close()
 
 	if err := goose.SetDialect("mysql"); err != nil {
 		log.Fatalf("failed to set dialect: %v", err)

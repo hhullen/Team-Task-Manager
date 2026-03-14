@@ -10,6 +10,7 @@ import (
 	"team-task-manager/internal/api/v1"
 	"team-task-manager/internal/clients/mysql"
 	"team-task-manager/internal/clients/redis"
+	gracefulterminator "team-task-manager/internal/graceful_terminator"
 	"team-task-manager/internal/logger"
 	ratelimiter "team-task-manager/internal/redis_rate_limiter"
 	secretprovider "team-task-manager/internal/secret_provider"
@@ -40,8 +41,17 @@ func main() {
 	ctx, cancelCtx := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancelCtx()
 
+	go func() {
+		<-ctx.Done()
+		gracefulterminator.Stop()
+	}()
+
 	apiLog := logger.NewLogger(os.Stdout, "API")
 	serviceLog := logger.NewLogger(os.Stdout, "SERVICE")
+	gracefulterminator.Add(func() {
+		apiLog.Stop()
+		serviceLog.Stop()
+	})
 
 	secrets := secretprovider.NewSecretProvider()
 
@@ -75,6 +85,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	gracefulterminator.Add(func() {
+		err := dbConn.Close()
+		if err != nil {
+			serviceLog.ErrorKV("closing db", "error", err.Error())
+		}
+	})
+
 	dbClient := mysql.NewClient(ctx, dbConn)
 
 	redisHost, err := secrets.ReadSecret("redis_host")
@@ -99,9 +116,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	gracefulterminator.Add(func() {
+		err := redisConn.Close()
+		if err != nil {
+			serviceLog.ErrorKV("closing redis", "error", err.Error())
+		}
+	})
+
 	cacheClient := redis.NewClient(redisConn)
 
-	service := service.NewService(ctx, dbClient, serviceLog, cacheClient, secrets)
+	service := service.NewService(ctx, dbClient, dbClient, serviceLog, cacheClient, secrets)
 
 	limiter := ratelimiter.NewRedisRateLimiter(ctx, redisConn)
 
@@ -109,6 +133,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	gracefulterminator.Add(func() {
+		err := apiService.Stop()
+		if err != nil {
+			serviceLog.ErrorKV("stopping API", "error", err.Error())
+		}
+	})
 
 	err = apiService.StartListening()
 	if err != nil {

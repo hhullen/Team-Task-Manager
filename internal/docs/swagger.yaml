@@ -1,5 +1,47 @@
 basePath: /api/v1
 definitions:
+  datastruct.CreateTeamRequest:
+    properties:
+      description:
+        example: responsible for transactions
+        type: string
+      name:
+        example: core
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  datastruct.CreateTeamResponse:
+    properties:
+      status:
+        example: status message
+        type: string
+    type: object
+  datastruct.InviteUserToTeamRequest:
+    properties:
+      login:
+        example: VaKadyk359
+        type: string
+    required:
+    - login
+    type: object
+  datastruct.InviteUserToTeamResponse:
+    properties:
+      status:
+        example: status message
+        type: string
+    type: object
+  datastruct.ListUserTeamsResponse:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/datastruct.TeamDescription'
+        type: array
+      status:
+        example: status message
+        type: string
+    type: object
   datastruct.LoginRequest:
     properties:
       login:
@@ -58,6 +100,21 @@ definitions:
         example: status message
         type: string
     type: object
+  datastruct.TeamDescription:
+    properties:
+      description:
+        example: responsible for transactions
+        type: string
+      name:
+        example: core
+        type: string
+      team_id:
+        type: integer
+    required:
+    - description
+    - name
+    - team_id
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -104,8 +161,6 @@ paths:
       - Auth
   /refresh:
     post:
-      consumes:
-      - application/json
       description: refresh tokens.
       produces:
       - application/json
@@ -156,24 +211,48 @@ paths:
       tags:
       - Auth
   /teams:
-    post:
+    get:
       consumes:
       - application/json
-      description: create new team.
-      parameters:
-      - description: login and password and info
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/datastruct.RegisterRequest'
+      description: list teams the user member of .
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/datastruct.RegisterResponse'
+            $ref: '#/definitions/datastruct.ListUserTeamsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      security:
+      - BearerAuth: []
+      summary: list teams the user member of
+      tags:
+      - Teams
+    post:
+      consumes:
+      - application/json
+      description: create new team.
+      parameters:
+      - description: team description
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.CreateTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.CreateTeamResponse'
         "400":
           description: Bad Request
           schema:
@@ -185,6 +264,43 @@ paths:
       security:
       - BearerAuth: []
       summary: create new team
+      tags:
+      - Teams
+  /teams/{id}/invite:
+    post:
+      consumes:
+      - application/json
+      description: invite user to team .
+      parameters:
+      - description: team id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: team id and login of invited user
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.InviteUserToTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.InviteUserToTeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      security:
+      - BearerAuth: []
+      summary: invite user to team
       tags:
       - Teams
 securityDefinitions:

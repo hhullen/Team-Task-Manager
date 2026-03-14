@@ -5,6 +5,7 @@
 package sqlc
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -14,6 +15,29 @@ type RefreshToken struct {
 	ExpiredAt time.Time
 	Revoked   bool
 	Used      bool
+}
+
+type Task struct {
+	TaskID      int64
+	AssigneeID  int64
+	CreatedBy   int64
+	TeamID      int64
+	Subject     string
+	Description string
+	CreatedAt   sql.NullTime
+}
+
+type Team struct {
+	TeamID      int64
+	OwnerID     int64
+	Name        string
+	Description string
+}
+
+type TeamMember struct {
+	UserID   int64
+	TeamID   int64
+	JoinedAt sql.NullTime
 }
 
 type User struct {

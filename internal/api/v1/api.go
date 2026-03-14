@@ -43,7 +43,23 @@ type IWithStatus interface {
 	GetStatus() string
 }
 
+type IWithUserId interface {
+	SetUserId(int64)
+}
+
+type IWithUserRole interface {
+	SetUserRole(string)
+}
+
+type IWithJWTUserCreds interface {
+	IWithUserId
+	IWithUserRole
+}
+
 type IAppService interface {
+	CreateTeam(*ds.CreateTeamRequest) *ds.CreateTeamResponse
+	ListUserTeams(*ds.ListUserTeamsRequest) *ds.ListUserTeamsResponse
+	InviteUserToTeam(*ds.InviteUserToTeamRequest) *ds.InviteUserToTeamResponse
 }
 
 type IAuthService interface {
@@ -133,14 +149,6 @@ func NewAPI(ctx context.Context,
 		WriteTimeout: writeTimeout,
 	}
 
-	go func() {
-		<-ctx.Done()
-		err := server.Shutdown(context.Background())
-		if err != nil {
-			log.FatalKV("server failed graceful shutdown", "error", err.Error())
-		}
-	}()
-
 	jwtSec, err := sec.ReadSecret(ds.JWTSecretKey)
 	if err != nil {
 		return nil, err
@@ -179,6 +187,11 @@ func buildAPI(ctx context.Context,
 func (a *API) StartListening() error {
 	a.logger.InfoKV("Server is listening")
 	return a.server.ListenAndServe()
+}
+
+func (a *API) Stop() error {
+	a.logger.InfoKV("Server Shutdown")
+	return a.server.Shutdown(a.ctx)
 }
 
 func mainMiddleware(next http.Handler, log ILogger) http.Handler {
@@ -244,7 +257,7 @@ func jwtBasedMiddleware(a *API, next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), ds.UserIDKey, claims.UserId)
-		ctx = context.WithValue(ctx, ds.RoleKey, claims.Role)
+		ctx = context.WithValue(ctx, ds.UserRoleKey, claims.Role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

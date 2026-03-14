@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	ds "team-task-manager/internal/datastruct"
+	gracefulterminator "team-task-manager/internal/graceful_terminator"
 
 	"github.com/robfig/cron/v3"
 )
@@ -38,6 +39,12 @@ type IAuthStorage interface {
 	DeleteAllUserSession(userId int64) error
 }
 
+type IAppStorage interface {
+	AddNewTeam(*ds.CreateTeamRequest) (*ds.CreateTeamResponse, error)
+	GetUserTeams(userId int64) (*ds.ListUserTeamsResponse, error)
+	AddUserToUserTeam(*ds.DBInviteUserToTeamRequest) (*ds.InviteUserToTeamResponse, error)
+}
+
 type ISecretProvider interface {
 	ReadSecret(key string) (string, error)
 }
@@ -47,12 +54,13 @@ type Service struct {
 	logger      ILogger
 	cache       ICache
 	storageAuth IAuthStorage
+	storageApp  IAppStorage
 	secret      ISecretProvider
 	cron        *cron.Cron
 }
 
-func NewService(ctx context.Context, as IAuthStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
-	s := buildService(ctx, as, l, c, sp)
+func NewService(ctx context.Context, aus IAuthStorage, aps IAppStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
+	s := buildService(ctx, aus, aps, l, c, sp)
 
 	s.cron = cron.New()
 	s.cron.AddFunc("0 0 * * *", func() {
@@ -61,16 +69,22 @@ func NewService(ctx context.Context, as IAuthStorage, l ILogger, c ICache, sp IS
 			s.logger.ErrorKV("CleanupUslessTokens", "error", err)
 		}
 	})
+	s.cron.Start()
+
+	gracefulterminator.Add(func() {
+		<-s.cron.Stop().Done()
+	})
 
 	return s
 }
 
-func buildService(ctx context.Context, as IAuthStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
+func buildService(ctx context.Context, aus IAuthStorage, aps IAppStorage, l ILogger, c ICache, sp ISecretProvider) *Service {
 	return &Service{
 		ctx:         ctx,
 		logger:      l,
 		cache:       c,
-		storageAuth: as,
+		storageAuth: aus,
+		storageApp:  aps,
 		secret:      sp,
 	}
 }

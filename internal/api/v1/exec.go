@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -25,6 +26,10 @@ func getStatusCode(s string) int {
 		return http.StatusUnauthorized
 	case ds.StatusSessionReset:
 		return http.StatusUnauthorized
+	case ds.StatusForbidden:
+		return http.StatusForbidden
+	case ds.StaturNotOwner:
+		return http.StatusForbidden
 	}
 
 	return http.StatusOK
@@ -32,12 +37,11 @@ func getStatusCode(s string) int {
 
 func extractJsonBody[ReqT any](r *http.Request, v ReqT) error {
 	decoder := json.NewDecoder(r.Body)
-
 	if err := decoder.Decode(&v); err != nil && err != io.EOF {
 		return err
 	}
 
-	return nil
+	return setJWTUserCredsIfRequire(r, v)
 }
 
 func writeJsonResponse[RespT IWithStatus](w *http.ResponseWriter, resp RespT) error {
@@ -59,12 +63,42 @@ func writeJsonResponse[RespT IWithStatus](w *http.ResponseWriter, resp RespT) er
 	return nil
 }
 
-func extractSchemaQuery[ReqT IWithStatus](r *http.Request, v ReqT) error {
+func extractSchemaQuery[ReqT any](r *http.Request, v ReqT) error {
 	if err := schemaDecoder.Decode(&v, r.URL.Query()); err != nil && err != io.EOF {
 		return err
 	}
 
+	return setJWTUserCredsIfRequire(r, v)
+}
+
+func extractJWTCredsOnly[ReqT IWithJWTUserCreds](r *http.Request, v ReqT) error {
+	ctxIdVal := r.Context().Value(ds.UserIDKey)
+	ctxRoleVal := r.Context().Value(ds.UserRoleKey)
+	if ctxIdVal == nil || ctxRoleVal == nil {
+		return fmt.Errorf("struct expected to get jwt creds but was not privided")
+	}
+
+	id, okId := ctxIdVal.(int64)
+	if !okId {
+		return fmt.Errorf("key '%s' expected to be 'int64' type but was not", ds.UserIDKey)
+	}
+	role, okRole := ctxRoleVal.(string)
+	if !okRole {
+		return fmt.Errorf("key '%s' expected to be 'string' type but was not", ds.UserRoleKey)
+	}
+
+	v.SetUserId(id)
+	v.SetUserRole(role)
+
 	return nil
+}
+
+func setJWTUserCredsIfRequire(r *http.Request, v any) error {
+	vv, okV := v.(IWithJWTUserCreds)
+	if !okV {
+		return nil
+	}
+	return extractJWTCredsOnly(r, vv)
 }
 
 func Exec[ReqT any, RespT IWithStatus](a ExecArgs[ReqT, RespT]) {

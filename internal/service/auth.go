@@ -42,7 +42,9 @@ func (s *Service) LoginUser(req *ds.LoginRequest) *ds.LoginResponse {
 	}
 
 	if !exist {
-		return &ds.LoginResponse{Status: ds.Status{Message: ds.StatusWrongLoginOrPassword}}
+		return &ds.LoginResponse{
+			Status: ds.Status{Message: ds.StatusWrongLoginOrPassword},
+		}
 	}
 
 	match, err := supports.IsStringArgonHash(req.Password, identities.Password)
@@ -67,6 +69,7 @@ func (s *Service) LoginUser(req *ds.LoginRequest) *ds.LoginResponse {
 
 	return &ds.LoginResponse{
 		AccessToken:  ds.AccessToken{AccessToken: at},
+		Status:       ds.Status{Message: ds.StatusSuccess},
 		RefreshToken: ds.RefreshToken{RefreshToken: rt},
 	}
 }
@@ -128,6 +131,7 @@ func (s *Service) Refresh(req *ds.RefreshRequest) *ds.RefreshResponse {
 
 	return &ds.RefreshResponse{
 		AccessToken:  ds.AccessToken{AccessToken: at},
+		Status:       ds.Status{Message: ds.StatusSuccess},
 		RefreshToken: ds.RefreshToken{RefreshToken: rt},
 	}
 }

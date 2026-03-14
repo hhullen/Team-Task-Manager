@@ -1,5 +1,18 @@
 package datastruct
 
+const (
+	StatusSuccess              = "ok"
+	StatusNotFound             = "resource not found"
+	StatusAlreadyExists        = "resource already exists"
+	StatusUserAlreadyExists    = "user already exists"
+	StatusWrongLoginOrPassword = "wrong login or password"
+	StatusInvalidToken         = "invalid token"
+	StatusSessionReset         = "session have been reset"
+	StatusServiceError         = "service failed exec request"
+	StatusForbidden            = "have no rights"
+	StaturNotOwner             = "not an owner"
+)
+
 type Status struct {
 	Message string `json:"status,omitempty" example:"status message"`
 }
@@ -23,14 +36,3 @@ type AvoidCacheFlag struct {
 func (a *AvoidCacheFlag) AvoidCache() bool {
 	return a.Flag
 }
-
-const (
-	StatusSuccess              = "ok"
-	StatusNotFound             = "resource not found"
-	StatusAlreadyExists        = "resource already exists"
-	StatusUserAlreadyExists    = "user already exists"
-	StatusWrongLoginOrPassword = "wrong login or password"
-	StatusInvalidToken         = "invalid token"
-	StatusSessionReset         = "session have been reset"
-	StatusServiceError         = "service failed exec request"
-)

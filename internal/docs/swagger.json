@@ -67,9 +67,6 @@
         "/refresh": {
             "post": {
                 "description": "refresh tokens.",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -146,6 +143,44 @@
             }
         },
         "/teams": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "list teams the user member of .",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "list teams the user member of",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.ListUserTeamsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -165,12 +200,12 @@
                 "summary": "create new team",
                 "parameters": [
                     {
-                        "description": "login and password and info",
+                        "description": "team description",
                         "name": "input",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/datastruct.RegisterRequest"
+                            "$ref": "#/definitions/datastruct.CreateTeamRequest"
                         }
                     }
                 ],
@@ -178,7 +213,65 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/datastruct.RegisterResponse"
+                            "$ref": "#/definitions/datastruct.CreateTeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/{id}/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "invite user to team .",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "invite user to team",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "team id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "team id and login of invited user",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.InviteUserToTeamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.InviteUserToTeamResponse"
                         }
                     },
                     "400": {
@@ -198,6 +291,68 @@
         }
     },
     "definitions": {
+        "datastruct.CreateTeamRequest": {
+            "type": "object",
+            "required": [
+                "description",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "responsible for transactions"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "core"
+                }
+            }
+        },
+        "datastruct.CreateTeamResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "status message"
+                }
+            }
+        },
+        "datastruct.InviteUserToTeamRequest": {
+            "type": "object",
+            "required": [
+                "login"
+            ],
+            "properties": {
+                "login": {
+                    "type": "string",
+                    "example": "VaKadyk359"
+                }
+            }
+        },
+        "datastruct.InviteUserToTeamResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "status message"
+                }
+            }
+        },
+        "datastruct.ListUserTeamsResponse": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastruct.TeamDescription"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "example": "status message"
+                }
+            }
+        },
         "datastruct.LoginRequest": {
             "type": "object",
             "required": [
@@ -278,6 +433,27 @@
                 "status": {
                     "type": "string",
                     "example": "status message"
+                }
+            }
+        },
+        "datastruct.TeamDescription": {
+            "type": "object",
+            "required": [
+                "description",
+                "name",
+                "team_id"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "responsible for transactions"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "core"
+                },
+                "team_id": {
+                    "type": "integer"
                 }
             }
         }

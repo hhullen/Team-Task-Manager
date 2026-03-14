@@ -2,14 +2,9 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"team-task-manager/internal/clients/mysql/sqlc"
 	ds "team-task-manager/internal/datastruct"
-
-	"github.com/VividCortex/mysqlerr"
-	"github.com/go-sql-driver/mysql"
 )
 
 func (c *Client) AddNewUser(req *ds.DBRegisterRequest) (resp *ds.RegisterResponse, err error) {
@@ -19,8 +14,7 @@ func (c *Client) AddNewUser(req *ds.DBRegisterRequest) (resp *ds.RegisterRespons
 			PasswordHash: req.Password,
 		})
 		if err != nil {
-			var mysqlErr *mysql.MySQLError
-			if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlerr.ER_DUP_ENTRY {
+			if isDuplicate(err) {
 				resp = &ds.RegisterResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
 				return nil
 			}
@@ -55,7 +49,7 @@ func (c *Client) GetAuthIdentitiesByUserID(id int64) (*ds.AuthIdentities, bool, 
 
 	res, err := c.db.Querier().GetUserIdentitiesById(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if isNoRows(err) {
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -69,8 +63,10 @@ func (c *Client) GetAuthIdentitiesByUserID(id int64) (*ds.AuthIdentities, bool, 
 		UserInfo: ds.UserInfo{
 			Name: res.Name,
 		},
-		Role:   res.Role,
-		UserID: res.ID,
+		JWTCreds: ds.JWTCreds{
+			Role:   res.Role,
+			UserID: res.ID,
+		},
 	}, true, nil
 }
 
@@ -80,7 +76,7 @@ func (c *Client) GetAuthIdentitiesByLogin(login string) (*ds.AuthIdentities, boo
 
 	res, err := c.db.Querier().GetUserIdentitiesByLogin(ctx, login)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if isNoRows(err) {
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -94,8 +90,10 @@ func (c *Client) GetAuthIdentitiesByLogin(login string) (*ds.AuthIdentities, boo
 		UserInfo: ds.UserInfo{
 			Name: res.Name,
 		},
-		Role:   res.Role,
-		UserID: res.ID,
+		JWTCreds: ds.JWTCreds{
+			Role:   res.Role,
+			UserID: res.ID,
+		},
 	}, true, nil
 }
 
@@ -123,7 +121,7 @@ func (c *Client) GetRefreshToken(token string) (*ds.DBRefreshToken, bool, error)
 
 	res, err := c.db.Querier().GetRefreshToken(ctx, token)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if isNoRows(err) {
 			return nil, false, nil
 		}
 		return nil, false, err

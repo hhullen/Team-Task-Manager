@@ -89,7 +89,6 @@ func (a *API) Login(w http.ResponseWriter, r *http.Request) {
 // @Summary      refresh tokens
 // @Description  refresh tokens.
 // @Tags         Auth
-// @Accept       json
 // @Produce      json
 // @Success      200           {object}  ds.RefreshResponse
 // @Failure      400           {object}  ds.Status

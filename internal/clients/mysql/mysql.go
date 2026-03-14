@@ -9,6 +9,8 @@ import (
 
 	"team-task-manager/internal/clients/mysql/sqlc"
 
+	"github.com/VividCortex/mysqlerr"
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -63,14 +65,6 @@ func NewMySQLConn(ctx context.Context,
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
-
-	go func() {
-		<-ctx.Done()
-		err = db.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
 
 	return db, nil
 }
@@ -127,4 +121,24 @@ func (db *DB) ExecTx(txOpt *sql.TxOptions, withTx func(context.Context, IQuerier
 
 func (db *DB) Querier() IQuerier {
 	return db.sqlc
+}
+
+func isDuplicate(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlerr.ER_DUP_ENTRY {
+		return true
+	}
+	return false
+}
+
+// func isForeignKeyFail(err error) bool {
+// 	var mysqlErr *mysql.MySQLError
+// 	if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlerr.ER_NO_REFERENCED_ROW_2 {
+// 		return true
+// 	}
+// 	return false
+// }
+
+func isNoRows(err error) bool {
+	return errors.Is(err, sql.ErrNoRows)
 }
