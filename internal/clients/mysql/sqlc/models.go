@@ -18,11 +18,12 @@ type RefreshToken struct {
 }
 
 type Task struct {
-	TaskID      int64
+	TaskID      sql.NullInt64
 	AssigneeID  int64
 	CreatedBy   int64
 	TeamID      int64
 	Subject     string
+	Status      string
 	Description string
 	CreatedAt   sql.NullTime
 }

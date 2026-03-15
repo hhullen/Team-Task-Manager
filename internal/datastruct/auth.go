@@ -53,7 +53,7 @@ type AccessToken struct {
 }
 
 type RefreshToken struct {
-	RefreshToken string `validate:"required" example:"-" swaggerignore:"true"`
+	RefreshToken string `json:",omitempty" validate:"required" example:"-" swaggerignore:"true"`
 }
 
 type DBRefreshToken struct {

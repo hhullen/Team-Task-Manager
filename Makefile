@@ -96,6 +96,9 @@ migrations-up: $(MIGRATOR_BIN)
 migrations-down: $(MIGRATOR_BIN)
 	$(MIGRATOR_BIN) down
 
+migrations-down-all: $(MIGRATOR_BIN)
+	$(MIGRATOR_BIN) down-all
+
 migrations-status: $(MIGRATOR_BIN)
 	$(MIGRATOR_BIN) status
 

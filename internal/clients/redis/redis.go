@@ -13,8 +13,8 @@ import (
 //go:generate mockgen -destination=redis_mock.go -package=redis github.com/redis/go-redis/v9 UniversalClient
 
 const (
-	requestTimeout    = time.Millisecond * 200
-	defaultExpiration = time.Minute * 10
+	requestTimeout    = time.Millisecond * 400
+	defaultExpiration = time.Minute * 5
 )
 
 func NewRedisConn(ctx context.Context, host, port, password string) (*go_redis.Client, error) {

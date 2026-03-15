@@ -102,6 +102,9 @@ func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (resp *ds.
 			if isNoRows(err) {
 				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusNotFound}}
 				return nil
+			} else if isDuplicate(err) {
+				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
+				return nil
 			}
 			return err
 		}

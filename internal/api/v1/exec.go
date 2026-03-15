@@ -30,6 +30,8 @@ func getStatusCode(s string) int {
 		return http.StatusForbidden
 	case ds.StaturNotOwner:
 		return http.StatusForbidden
+	case ds.StaturNotMember:
+		return http.StatusForbidden
 	}
 
 	return http.StatusOK
@@ -64,7 +66,7 @@ func writeJsonResponse[RespT IWithStatus](w *http.ResponseWriter, resp RespT) er
 }
 
 func extractSchemaQuery[ReqT any](r *http.Request, v ReqT) error {
-	if err := schemaDecoder.Decode(&v, r.URL.Query()); err != nil && err != io.EOF {
+	if err := schemaDecoder.Decode(v, r.URL.Query()); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -101,6 +103,10 @@ func setJWTUserCredsIfRequire(r *http.Request, v any) error {
 	return extractJWTCredsOnly(r, vv)
 }
 
+func structValidator[ReqT any](s ReqT) error {
+	return supports.StructValidator().Struct(s)
+}
+
 func Exec[ReqT any, RespT IWithStatus](a ExecArgs[ReqT, RespT]) {
 	var req ReqT
 
@@ -118,7 +124,11 @@ func Exec[ReqT any, RespT IWithStatus](a ExecArgs[ReqT, RespT]) {
 		return
 	}
 
-	if err := supports.StructValidator().Struct(&req); err != nil {
+	if a.validator == nil {
+		a.validator = structValidator
+	}
+
+	if err := a.validator(&req); err != nil {
 		msg := "failed validating request"
 		a.api.logger.ErrorKV(msg, "error", err.Error(), "request", req)
 

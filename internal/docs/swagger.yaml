@@ -1,5 +1,35 @@
 basePath: /api/v1
 definitions:
+  datastruct.CreateTaskRequest:
+    properties:
+      assignee_login:
+        example: VaKadyk359
+        type: string
+      description:
+        example: add new service endpoint
+        type: string
+      status:
+        example: todo
+        type: string
+      subject:
+        example: service endpoint
+        type: string
+      team_id:
+        example: 1
+        type: integer
+    required:
+    - assignee_login
+    - description
+    - status
+    - subject
+    - team_id
+    type: object
+  datastruct.CreateTaskResponse:
+    properties:
+      status:
+        example: status message
+        type: string
+    type: object
   datastruct.CreateTeamRequest:
     properties:
       description:
@@ -17,6 +47,19 @@ definitions:
       status:
         example: status message
         type: string
+    type: object
+  datastruct.GetTasksResponse:
+    properties:
+      cached:
+        example: false
+        type: boolean
+      status:
+        example: status message
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/datastruct.Task'
+        type: array
     type: object
   datastruct.InviteUserToTeamRequest:
     properties:
@@ -99,6 +142,25 @@ definitions:
       status:
         example: status message
         type: string
+    type: object
+  datastruct.Task:
+    properties:
+      assignee_id:
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      description:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      task_id:
+        type: integer
+      team_id:
+        type: integer
     type: object
   datastruct.TeamDescription:
     properties:
@@ -210,6 +272,101 @@ paths:
       summary: register new user
       tags:
       - Auth
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: get tasks.
+      parameters:
+      - description: team_id
+        example: "1"
+        in: query
+        name: team_id
+        required: true
+        type: string
+      - description: status
+        example: todo
+        in: query
+        name: status
+        type: string
+      - description: assignee_id
+        example: "1"
+        in: query
+        name: assignee_id
+        type: string
+      - description: assignee_login
+        example: VaKadyk359
+        in: query
+        name: assignee_login
+        type: string
+      - description: offset
+        example: "0"
+        in: query
+        name: offset
+        required: true
+        type: string
+      - description: limit
+        example: "10"
+        in: query
+        name: limit
+        required: true
+        type: string
+      - description: avoid_cache
+        example: "true"
+        in: query
+        name: avoid_cache
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.GetTasksResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      security:
+      - BearerAuth: []
+      summary: get tasks
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: create new task.
+      parameters:
+      - description: task
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.CreateTaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      security:
+      - BearerAuth: []
+      summary: create new task
+      tags:
+      - Tasks
   /teams:
     get:
       consumes:

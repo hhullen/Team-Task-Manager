@@ -11,6 +11,7 @@ import (
 
 type Querier interface {
 	AddMemberToTeam(ctx context.Context, arg AddMemberToTeamParams) (sql.Result, error)
+	AddNewTask(ctx context.Context, arg AddNewTaskParams) (sql.Result, error)
 	AddNewTeam(ctx context.Context, arg AddNewTeamParams) (sql.Result, error)
 	AddRefreshToken(ctx context.Context, arg AddRefreshTokenParams) error
 	CleanupUselessTokens(ctx context.Context) error
@@ -18,10 +19,13 @@ type Querier interface {
 	CreateUserAuth(ctx context.Context, arg CreateUserAuthParams) (sql.Result, error)
 	DeleteUserSessions(ctx context.Context, userID int64) (sql.Result, error)
 	GetRefreshToken(ctx context.Context, token string) (RefreshToken, error)
+	GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, error)
+	GetTasksOfTeam(ctx context.Context, teamID int64) ([]Task, error)
 	GetTeamOwner(ctx context.Context, teamID int64) (int64, error)
 	GetUserIdentitiesById(ctx context.Context, id int64) (GetUserIdentitiesByIdRow, error)
 	GetUserIdentitiesByLogin(ctx context.Context, login string) (GetUserIdentitiesByLoginRow, error)
-	GetUserTeams(ctx context.Context, ownerID int64) ([]GetUserTeamsRow, error)
+	GetUserTeams(ctx context.Context, userID int64) ([]GetUserTeamsRow, error)
+	IsTeamMember(ctx context.Context, arg IsTeamMemberParams) (bool, error)
 	UpdateRefreshToken(ctx context.Context, arg UpdateRefreshTokenParams) (sql.Result, error)
 }
 

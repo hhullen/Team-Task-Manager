@@ -54,9 +54,8 @@ func (q *Queries) GetTeamOwner(ctx context.Context, teamID int64) (int64, error)
 
 const getUserTeams = `-- name: GetUserTeams :many
 SELECT t.team_id, t.name, t.description
-FROM teams t
-WHERE t.owner_id = ?
-ORDER BY t.name
+FROM team_members tm INNER JOIN teams t ON tm.team_id = t.team_id
+WHERE tm.user_id = ?
 `
 
 type GetUserTeamsRow struct {
@@ -65,8 +64,8 @@ type GetUserTeamsRow struct {
 	Description string
 }
 
-func (q *Queries) GetUserTeams(ctx context.Context, ownerID int64) ([]GetUserTeamsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getUserTeams, ownerID)
+func (q *Queries) GetUserTeams(ctx context.Context, userID int64) ([]GetUserTeamsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserTeams, userID)
 	if err != nil {
 		return nil, err
 	}

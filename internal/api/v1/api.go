@@ -60,6 +60,9 @@ type IAppService interface {
 	CreateTeam(*ds.CreateTeamRequest) *ds.CreateTeamResponse
 	ListUserTeams(*ds.ListUserTeamsRequest) *ds.ListUserTeamsResponse
 	InviteUserToTeam(*ds.InviteUserToTeamRequest) *ds.InviteUserToTeamResponse
+
+	AddNewTask(*ds.CreateTaskRequest) *ds.CreateTaskResponse
+	GetTasks(*ds.GetTasksRequest) *ds.GetTasksResponse
 }
 
 type IAuthService interface {
@@ -99,6 +102,7 @@ type ExecArgs[ReqT any, RespT IWithStatus] struct {
 	responseWriter   func(w *http.ResponseWriter, v *RespT) error
 	httpRequest      *http.Request
 	httpResponse     *http.ResponseWriter
+	validator        func(s *ReqT) error
 }
 
 type ResponseWriterInterceptor struct {
@@ -180,6 +184,7 @@ func buildAPI(ctx context.Context,
 
 	api.setupAuthHandlers()
 	api.setupTeamsHandlers()
+	api.setupTasksHandlers()
 
 	return api
 }

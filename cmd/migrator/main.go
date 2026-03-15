@@ -18,13 +18,15 @@ const (
 	migrationsDir = "./migrations/mysql"
 	cmdUp         = "up"
 	cmdDown       = "down"
+	cmdDownAll    = "down-all"
 	cmdStatus     = "status"
 )
 
 var executors = map[string]func(db *sql.DB, dir string, opts ...goose.OptionsFunc) error{
-	cmdUp:     goose.Up,
-	cmdDown:   goose.Down,
-	cmdStatus: goose.Status,
+	cmdUp:      goose.Up,
+	cmdDown:    goose.Down,
+	cmdStatus:  goose.Status,
+	cmdDownAll: downAll,
 }
 
 func main() {
@@ -100,4 +102,8 @@ func ExecMigration(db *sql.DB, command, migrationsDir string) {
 	}
 
 	log.Printf("%s successfully migrated\n", migrationsDir)
+}
+
+func downAll(db *sql.DB, dir string, opts ...goose.OptionsFunc) error {
+	return goose.DownTo(db, dir, 0, opts...)
 }

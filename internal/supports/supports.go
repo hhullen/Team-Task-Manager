@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"strconv"
 	"strings"
@@ -170,4 +171,10 @@ func MakeKVMessagesJSON(kvs ...any) (bytes []byte, err error) {
 
 	bytes, err = json.Marshal(msgs)
 	return
+}
+
+func FNV1Hash(data []byte) string {
+	h := fnv.New64a()
+	h.Write(data)
+	return strconv.FormatUint(h.Sum64(), 10)
 }

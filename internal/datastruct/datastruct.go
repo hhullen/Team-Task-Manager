@@ -11,6 +11,8 @@ const (
 	StatusServiceError         = "service failed exec request"
 	StatusForbidden            = "have no rights"
 	StaturNotOwner             = "not an owner"
+	StaturNotMember            = "not a member"
+	StatusDataTooLong          = "some data too long"
 )
 
 type Status struct {

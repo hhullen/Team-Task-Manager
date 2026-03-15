@@ -8,9 +8,8 @@ VALUES (?, ?);
 
 -- name: GetUserTeams :many
 SELECT t.team_id, t.name, t.description
-FROM teams t
-WHERE t.owner_id = ?
-ORDER BY t.name;
+FROM team_members tm INNER JOIN teams t ON tm.team_id = t.team_id
+WHERE tm.user_id = ?;
 
 -- name: GetTeamOwner :one
 select owner_id

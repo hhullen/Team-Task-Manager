@@ -131,14 +131,40 @@ func isDuplicate(err error) bool {
 	return false
 }
 
-// func isForeignKeyFail(err error) bool {
-// 	var mysqlErr *mysql.MySQLError
-// 	if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlerr.ER_NO_REFERENCED_ROW_2 {
-// 		return true
-// 	}
-// 	return false
-// }
+func isLongData(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlerr.ER_DATA_TOO_LONG {
+		return true
+	}
+	return false
+}
 
 func isNoRows(err error) bool {
 	return errors.Is(err, sql.ErrNoRows)
+}
+
+func nullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{
+			Valid: false,
+		}
+	}
+	return sql.NullString{
+		String: *s,
+		Valid:  true,
+	}
+}
+
+func fromNullString(ns sql.NullString) *string {
+	if ns.Valid {
+		return &ns.String
+	}
+	return nil
+}
+
+func nullInt64(n *int64) sql.NullInt64 {
+	if n == nil {
+		return sql.NullInt64{Valid: false}
+	}
+	return sql.NullInt64{Valid: true, Int64: *n}
 }

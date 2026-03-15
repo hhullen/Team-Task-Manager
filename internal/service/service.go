@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	ds "team-task-manager/internal/datastruct"
 	gracefulterminator "team-task-manager/internal/graceful_terminator"
 
@@ -43,6 +44,9 @@ type IAppStorage interface {
 	AddNewTeam(*ds.CreateTeamRequest) (*ds.CreateTeamResponse, error)
 	GetUserTeams(userId int64) (*ds.ListUserTeamsResponse, error)
 	AddUserToUserTeam(*ds.DBInviteUserToTeamRequest) (*ds.InviteUserToTeamResponse, error)
+
+	AddNewTask(*ds.DBCreateTaskRequest) (*ds.CreateTaskResponse, error)
+	GetTasks(*ds.GetTasksRequest) (*ds.GetTasksResponse, error)
 }
 
 type ISecretProvider interface {
@@ -87,4 +91,53 @@ func buildService(ctx context.Context, aus IAuthStorage, aps IAppStorage, l ILog
 		storageApp:  aps,
 		secret:      sp,
 	}
+}
+
+func makeCacheKey(vv ...string) string {
+	length := 0
+	for i := range vv {
+		length += len(vv[i])
+	}
+
+	var b strings.Builder
+	b.Grow(length)
+
+	for i := range vv {
+		b.WriteString(vv[i])
+		b.WriteByte('_')
+	}
+
+	return b.String()
+}
+
+func execWithCache[RespT ICachedState](s *Service, key string, avoidCache bool, fetch func() (RespT, error)) (RespT, error) {
+	var response RespT
+	var cached bool
+	var err error
+
+	if !avoidCache {
+		cached, err = s.cache.Read(key, &response)
+		if err != nil {
+			s.logger.ErrorKV("failed reading cache", "message", err.Error())
+		}
+	}
+
+	if cached {
+		response.SetCached(true)
+		return response, nil
+	}
+
+	response, err = fetch()
+	if err != nil {
+		var empty RespT
+		return empty, err
+	}
+
+	err = s.cache.Write(key, response)
+	if err != nil {
+		s.logger.ErrorKV("failed writing cache", "message", err.Error())
+	}
+	response.SetCached(false)
+
+	return response, nil
 }
