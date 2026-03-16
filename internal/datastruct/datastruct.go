@@ -2,7 +2,8 @@ package datastruct
 
 const (
 	StatusSuccess              = "ok"
-	StatusNotFound             = "resource not found"
+	StatusResurceNotFound      = "resource not found"
+	StatusUserNotFound         = "user not found"
 	StatusAlreadyExists        = "resource already exists"
 	StatusUserAlreadyExists    = "user already exists"
 	StatusWrongLoginOrPassword = "wrong login or password"
@@ -10,9 +11,11 @@ const (
 	StatusSessionReset         = "session have been reset"
 	StatusServiceError         = "service failed exec request"
 	StatusForbidden            = "have no rights"
-	StaturNotOwner             = "not an owner"
-	StaturNotMember            = "not a member"
+	StatusNotOwner             = "not an owner"
+	StatusNotMember            = "not a member"
 	StatusDataTooLong          = "some data too long"
+	StatusIvalidVersion        = "invalid version"
+	StatusConflict             = "conflict"
 )
 
 type Status struct {

@@ -14,7 +14,9 @@ import (
 
 func getStatusCode(s string) int {
 	switch s {
-	case ds.StatusNotFound:
+	case ds.StatusUserNotFound:
+		return http.StatusNotFound
+	case ds.StatusResurceNotFound:
 		return http.StatusNotFound
 	case ds.StatusServiceError:
 		return http.StatusInternalServerError
@@ -28,10 +30,14 @@ func getStatusCode(s string) int {
 		return http.StatusUnauthorized
 	case ds.StatusForbidden:
 		return http.StatusForbidden
-	case ds.StaturNotOwner:
+	case ds.StatusNotOwner:
 		return http.StatusForbidden
-	case ds.StaturNotMember:
+	case ds.StatusNotMember:
 		return http.StatusForbidden
+	case ds.StatusConflict:
+		return http.StatusConflict
+	case ds.StatusIvalidVersion:
+		return http.StatusBadRequest
 	}
 
 	return http.StatusOK

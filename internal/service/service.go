@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	ds "team-task-manager/internal/datastruct"
 	gracefulterminator "team-task-manager/internal/graceful_terminator"
+	"team-task-manager/internal/supports"
 
 	"github.com/robfig/cron/v3"
 )
@@ -47,6 +49,7 @@ type IAppStorage interface {
 
 	AddNewTask(*ds.DBCreateTaskRequest) (*ds.CreateTaskResponse, error)
 	GetTasks(*ds.GetTasksRequest) (*ds.GetTasksResponse, error)
+	UpdateTask(req *ds.DBUpdateTaskRequest) (*ds.UpdateTaskResponse, error)
 }
 
 type ISecretProvider interface {
@@ -140,4 +143,31 @@ func execWithCache[RespT ICachedState](s *Service, key string, avoidCache bool, 
 	response.SetCached(false)
 
 	return response, nil
+}
+
+func (s *Service) getAuthIdentitiesByLogin(login string, avoidCache bool) (*ds.AuthIdentities, bool, error) {
+	notExist := errors.New("not exists")
+	ident, err := execWithCache(s,
+		makeCacheKey("IdByLogin", supports.FNV1Hash([]byte(login))),
+		avoidCache,
+		func() (*ds.AuthIdentities, error) {
+			ident, ok, err := s.storageAuth.GetAuthIdentitiesByLogin(login)
+			if err != nil {
+				return nil, err
+			}
+
+			if !ok {
+				return nil, notExist
+			}
+			return ident, err
+		})
+
+	if err != nil {
+		if errors.Is(err, notExist) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+
+	return ident, true, nil
 }

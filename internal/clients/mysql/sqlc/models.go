@@ -6,6 +6,7 @@ package sqlc
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type RefreshToken struct {
 }
 
 type Task struct {
-	TaskID      sql.NullInt64
+	TaskID      int64
 	AssigneeID  int64
 	CreatedBy   int64
 	TeamID      int64
@@ -26,6 +27,14 @@ type Task struct {
 	Status      string
 	Description string
 	CreatedAt   sql.NullTime
+	Version     int64
+}
+
+type TasksHistory struct {
+	TaskID    int64
+	ChangedBy int64
+	Payload   json.RawMessage
+	CreatedAt sql.NullTime
 }
 
 type Team struct {

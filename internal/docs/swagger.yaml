@@ -17,12 +17,16 @@ definitions:
       team_id:
         example: 1
         type: integer
+      version:
+        example: 1
+        type: integer
     required:
     - assignee_login
     - description
     - status
     - subject
     - team_id
+    - version
     type: object
   datastruct.CreateTaskResponse:
     properties:
@@ -58,7 +62,7 @@ definitions:
         type: string
       tasks:
         items:
-          $ref: '#/definitions/datastruct.Task'
+          $ref: '#/definitions/datastruct.TaskOutput'
         type: array
     type: object
   datastruct.InviteUserToTeamRequest:
@@ -143,7 +147,7 @@ definitions:
         example: status message
         type: string
     type: object
-  datastruct.Task:
+  datastruct.TaskOutput:
     properties:
       assignee_id:
         type: integer
@@ -161,6 +165,8 @@ definitions:
         type: integer
       team_id:
         type: integer
+      version:
+        type: integer
     type: object
   datastruct.TeamDescription:
     properties:
@@ -176,6 +182,44 @@ definitions:
     - description
     - name
     - team_id
+    type: object
+  datastruct.UpdateTaskRequest:
+    properties:
+      assignee_login:
+        example: VaKadyk359
+        type: string
+      description:
+        example: add new service endpoint
+        type: string
+      status:
+        example: todo
+        type: string
+      subject:
+        example: service endpoint
+        type: string
+      task_id:
+        example: 1
+        type: integer
+      team_id:
+        example: 1
+        type: integer
+      version:
+        example: 1
+        type: integer
+    required:
+    - assignee_login
+    - description
+    - status
+    - subject
+    - task_id
+    - team_id
+    - version
+    type: object
+  datastruct.UpdateTaskResponse:
+    properties:
+      status:
+        example: status message
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -365,6 +409,43 @@ paths:
       security:
       - BearerAuth: []
       summary: create new task
+      tags:
+      - Tasks
+  /tasks/{id}:
+    put:
+      consumes:
+      - application/json
+      description: update task.
+      parameters:
+      - description: team id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: task
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.UpdateTaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      security:
+      - BearerAuth: []
+      summary: update task
       tags:
       - Tasks
   /teams:

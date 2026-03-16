@@ -17,7 +17,7 @@ type ListUserTeamsRequest struct {
 type TeamDescription struct {
 	Name        string `json:"name" validate:"required" example:"core"`
 	Description string `json:"description" validate:"required" example:"responsible for transactions"`
-	TeamId      int64  `json:"team_id,omitempty" validate:"required"`
+	TeamId      int64  `json:"team_id,omitempty" validate:"required" example:"1"`
 }
 
 type ListUserTeamsResponse struct {

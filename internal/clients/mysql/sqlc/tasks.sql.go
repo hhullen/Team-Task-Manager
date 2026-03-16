@@ -8,7 +8,23 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 )
+
+const addChangeToTaskHistory = `-- name: AddChangeToTaskHistory :execresult
+INSERT INTO tasks_history (task_id, changed_by, payload)
+VALUES (?, ?, ?)
+`
+
+type AddChangeToTaskHistoryParams struct {
+	TaskID    int64
+	ChangedBy int64
+	Payload   json.RawMessage
+}
+
+func (q *Queries) AddChangeToTaskHistory(ctx context.Context, arg AddChangeToTaskHistoryParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, addChangeToTaskHistory, arg.TaskID, arg.ChangedBy, arg.Payload)
+}
 
 const addNewTask = `-- name: AddNewTask :execresult
 INSERT INTO tasks (assignee_id, created_by, team_id, subject, description, status)
@@ -35,6 +51,36 @@ func (q *Queries) AddNewTask(ctx context.Context, arg AddNewTaskParams) (sql.Res
 	)
 }
 
+const getTaskForUpdate = `-- name: GetTaskForUpdate :one
+SELECT assignee_id, team_id, subject, status, description, version
+FROM tasks 
+WHERE task_id = ? 
+FOR UPDATE
+`
+
+type GetTaskForUpdateRow struct {
+	AssigneeID  int64
+	TeamID      int64
+	Subject     string
+	Status      string
+	Description string
+	Version     int64
+}
+
+func (q *Queries) GetTaskForUpdate(ctx context.Context, taskID int64) (GetTaskForUpdateRow, error) {
+	row := q.db.QueryRowContext(ctx, getTaskForUpdate, taskID)
+	var i GetTaskForUpdateRow
+	err := row.Scan(
+		&i.AssigneeID,
+		&i.TeamID,
+		&i.Subject,
+		&i.Status,
+		&i.Description,
+		&i.Version,
+	)
+	return i, err
+}
+
 const getTasks = `-- name: GetTasks :many
 SELECT task_id, 
     assignee_id,
@@ -43,7 +89,8 @@ SELECT task_id,
     subject,
     status,
     description,
-    created_at
+    created_at,
+    version
 FROM tasks
 WHERE team_id = ?
   AND (status = ? OR ? IS NULL)
@@ -86,6 +133,7 @@ func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, err
 			&i.Status,
 			&i.Description,
 			&i.CreatedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -113,15 +161,26 @@ FROM tasks
 WHERE team_id = ?
 `
 
-func (q *Queries) GetTasksOfTeam(ctx context.Context, teamID int64) ([]Task, error) {
+type GetTasksOfTeamRow struct {
+	TaskID      int64
+	AssigneeID  int64
+	CreatedBy   int64
+	TeamID      int64
+	Subject     string
+	Status      string
+	Description string
+	CreatedAt   sql.NullTime
+}
+
+func (q *Queries) GetTasksOfTeam(ctx context.Context, teamID int64) ([]GetTasksOfTeamRow, error) {
 	rows, err := q.db.QueryContext(ctx, getTasksOfTeam, teamID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []GetTasksOfTeamRow
 	for rows.Next() {
-		var i Task
+		var i GetTasksOfTeamRow
 		if err := rows.Scan(
 			&i.TaskID,
 			&i.AssigneeID,
@@ -163,4 +222,35 @@ func (q *Queries) IsTeamMember(ctx context.Context, arg IsTeamMemberParams) (boo
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const updateTask = `-- name: UpdateTask :execresult
+UPDATE tasks 
+SET assignee_id = ?,
+    team_id = ?,
+    subject = ?,
+    status = ?,
+    description = ?,
+    version = version + 1
+WHERE task_id = ?
+`
+
+type UpdateTaskParams struct {
+	AssigneeID  int64
+	TeamID      int64
+	Subject     string
+	Status      string
+	Description string
+	TaskID      int64
+}
+
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, updateTask,
+		arg.AssigneeID,
+		arg.TeamID,
+		arg.Subject,
+		arg.Status,
+		arg.Description,
+		arg.TaskID,
+	)
 }

@@ -3,12 +3,14 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	ds "team-task-manager/internal/datastruct"
 	"team-task-manager/internal/supports"
 )
 
 const (
-	tasksPrefix = apiPrefix + "/tasks"
+	tasksPrefix      = apiPrefix + "/tasks"
+	updateTaskPrefix = tasksPrefix + "/{id}"
 )
 
 func (a *API) setupTasksHandlers() {
@@ -16,6 +18,8 @@ func (a *API) setupTasksHandlers() {
 		jwtBasedMiddleware(a, http.HandlerFunc(a.CreateTask)))
 	a.router.Handle(pattern(http.MethodGet, tasksPrefix),
 		jwtBasedMiddleware(a, http.HandlerFunc(a.GetTasks)))
+	a.router.Handle(pattern(http.MethodPut, updateTaskPrefix),
+		jwtBasedMiddleware(a, http.HandlerFunc(a.UpdateTask)))
 }
 
 // CreateTask create new task
@@ -60,7 +64,6 @@ func (a *API) CreateTask(w http.ResponseWriter, r *http.Request) {
 // @Failure      500            {object}  ds.Status
 // @Router       /tasks  [get]
 func (a *API) GetTasks(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("HERE")
 	Exec(ExecArgs[ds.GetTasksRequest, ds.GetTasksResponse]{
 		serviceFunc:      a.appService.GetTasks,
 		responseWriter:   writeJsonResponse[*ds.GetTasksResponse],
@@ -70,6 +73,43 @@ func (a *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 				return fmt.Errorf("assignee_id and assignee_login empty but expected at least one")
 			}
 			return supports.StructValidator().Struct(v)
+		},
+		httpResponse: &w,
+		httpRequest:  r,
+		api:          a,
+	})
+}
+
+// UpdateTask update task
+// @Summary      update task
+// @Description  update task.
+// @Tags         Tasks
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path      integer  true  "team id"
+// @Param        input body      ds.UpdateTaskRequest  true "task"
+// @Success      200   {object}  ds.UpdateTaskResponse
+// @Failure      400   {object}  ds.Status
+// @Failure      500   {object}  ds.Status
+// @Router       /tasks/{id} [put]
+func (a *API) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	Exec(ExecArgs[ds.UpdateTaskRequest, ds.UpdateTaskResponse]{
+		serviceFunc:    a.appService.UpdateTask,
+		responseWriter: writeJsonResponse[*ds.UpdateTaskResponse],
+		requestExtractor: func(r *http.Request, v *ds.UpdateTaskRequest) error {
+			idRaw := r.PathValue("id")
+			if idRaw == "" {
+				return fmt.Errorf("task id was not provided")
+			}
+
+			id, err := strconv.ParseInt(idRaw, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			v.TaskId = id
+			return extractJsonBody(r, v)
 		},
 		httpResponse: &w,
 		httpRequest:  r,

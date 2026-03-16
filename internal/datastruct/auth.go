@@ -46,6 +46,7 @@ type AuthIdentities struct {
 	JWTCreds
 	UserCreds
 	UserInfo
+	CachedStatus
 }
 
 type AccessToken struct {

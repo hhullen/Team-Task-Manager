@@ -20,6 +20,7 @@ const (
 	defaultConnLifeTime   = time.Minute * 5
 )
 
+var interruptTxErr = errors.New("tx interrupted")
 var defaultTxOpt = &sql.TxOptions{Isolation: sql.LevelRepeatableRead}
 
 type IQuerier interface {

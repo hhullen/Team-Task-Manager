@@ -291,6 +291,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/tasks/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update task.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "update task",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "team id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "task",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.UpdateTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.UpdateTaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    }
+                }
+            }
+        },
         "/teams": {
             "get": {
                 "security": [
@@ -447,7 +505,8 @@ const docTemplate = `{
                 "description",
                 "status",
                 "subject",
-                "team_id"
+                "team_id",
+                "version"
             ],
             "properties": {
                 "assignee_login": {
@@ -467,6 +526,10 @@ const docTemplate = `{
                     "example": "service endpoint"
                 },
                 "team_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "version": {
                     "type": "integer",
                     "example": 1
                 }
@@ -521,7 +584,7 @@ const docTemplate = `{
                 "tasks": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/datastruct.Task"
+                        "$ref": "#/definitions/datastruct.TaskOutput"
                     }
                 }
             }
@@ -645,7 +708,7 @@ const docTemplate = `{
                 }
             }
         },
-        "datastruct.Task": {
+        "datastruct.TaskOutput": {
             "type": "object",
             "properties": {
                 "assignee_id": {
@@ -671,6 +734,9 @@ const docTemplate = `{
                 },
                 "team_id": {
                     "type": "integer"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
@@ -692,6 +758,57 @@ const docTemplate = `{
                 },
                 "team_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "datastruct.UpdateTaskRequest": {
+            "type": "object",
+            "required": [
+                "assignee_login",
+                "description",
+                "status",
+                "subject",
+                "task_id",
+                "team_id",
+                "version"
+            ],
+            "properties": {
+                "assignee_login": {
+                    "type": "string",
+                    "example": "VaKadyk359"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "add new service endpoint"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "todo"
+                },
+                "subject": {
+                    "type": "string",
+                    "example": "service endpoint"
+                },
+                "task_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "team_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "version": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "datastruct.UpdateTaskResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "status message"
                 }
             }
         }

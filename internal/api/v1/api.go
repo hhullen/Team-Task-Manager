@@ -63,6 +63,7 @@ type IAppService interface {
 
 	AddNewTask(*ds.CreateTaskRequest) *ds.CreateTaskResponse
 	GetTasks(*ds.GetTasksRequest) *ds.GetTasksResponse
+	UpdateTask(*ds.UpdateTaskRequest) *ds.UpdateTaskResponse
 }
 
 type IAuthService interface {

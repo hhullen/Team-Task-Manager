@@ -78,20 +78,20 @@ func (c *Client) GetUserTeams(userId int64) (*ds.ListUserTeamsResponse, error) {
 	}, nil
 }
 
-func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (resp *ds.InviteUserToTeamResponse, err error) {
-	err = c.db.ExecTx(defaultTxOpt, func(ctx context.Context, qtx IQuerier) error {
+func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (*ds.InviteUserToTeamResponse, error) {
+	var resp *ds.InviteUserToTeamResponse
+	err := c.db.ExecTx(defaultTxOpt, func(ctx context.Context, qtx IQuerier) error {
 		id, err := qtx.GetTeamOwner(ctx, req.TeamId)
 		if err != nil {
 			if isNoRows(err) {
-				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusNotFound}}
-				return nil
+				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusUserNotFound}}
 			}
 			return err
 		}
 
 		if id != req.InviterId {
-			resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StaturNotOwner}}
-			return nil
+			resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusNotOwner}}
+			return interruptTxErr
 		}
 
 		res, err := qtx.AddMemberToTeam(ctx, sqlc.AddMemberToTeamParams{
@@ -99,12 +99,8 @@ func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (resp *ds.
 			TeamID: req.TeamId,
 		})
 		if err != nil {
-			if isNoRows(err) {
-				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusNotFound}}
-				return nil
-			} else if isDuplicate(err) {
+			if isDuplicate(err) {
 				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
-				return nil
 			}
 			return err
 		}
@@ -116,12 +112,16 @@ func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (resp *ds.
 
 		if n != 1 {
 			resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
-			return nil
+			return interruptTxErr
 		}
 
 		resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusSuccess}}
 		return nil
 	})
 
-	return
+	if resp != nil {
+		return resp, nil
+	}
+
+	return nil, err
 }

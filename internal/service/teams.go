@@ -24,14 +24,15 @@ func (s *Service) ListUserTeams(req *ds.ListUserTeamsRequest) *ds.ListUserTeamsR
 }
 
 func (s *Service) InviteUserToTeam(req *ds.InviteUserToTeamRequest) *ds.InviteUserToTeamResponse {
-	ident, exist, err := s.storageAuth.GetAuthIdentitiesByLogin(req.UserLoginToInvite)
+	const AvoidCache = false
+	ident, exists, err := s.getAuthIdentitiesByLogin(req.UserLoginToInvite, AvoidCache)
 	if err != nil {
 		s.logger.ErrorKV("InviteUserToTeam.GetAuthIdentitiesByLogin", "error", err.Error())
 		return nil
 	}
 
-	if !exist {
-		return &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusNotFound}}
+	if !exists {
+		return &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusUserNotFound}}
 	}
 
 	res, err := s.storageApp.AddUserToUserTeam(&ds.DBInviteUserToTeamRequest{

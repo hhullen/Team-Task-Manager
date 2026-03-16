@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -177,4 +178,11 @@ func FNV1Hash(data []byte) string {
 	h := fnv.New64a()
 	h.Write(data)
 	return strconv.FormatUint(h.Sum64(), 10)
+}
+
+func MakePatchFromTexts(v1, v2 string) string {
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(v1, v2, false)
+	patch := dmp.PatchMake(v1, diffs)
+	return dmp.PatchToText(patch)
 }

@@ -7,14 +7,16 @@ import (
 )
 
 func (s *Service) AddNewTask(req *ds.CreateTaskRequest) *ds.CreateTaskResponse {
-	ident, exist, err := s.storageAuth.GetAuthIdentitiesByLogin(req.AssigneeLogin)
+	const AvoidCache = false
+	ident, exists, err := s.getAuthIdentitiesByLogin(req.AssigneeLogin, AvoidCache)
+
 	if err != nil {
-		s.logger.ErrorKV("AddNewTask.GetAuthIdentitiesByLogin", "error", err.Error())
+		s.logger.ErrorKV("GetTasks.getAuthIdentitiesByLogin", "error", err.Error())
 		return nil
 	}
 
-	if !exist {
-		return &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusNotFound}}
+	if !exists {
+		return &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusUserNotFound}}
 	}
 
 	res, err := s.storageApp.AddNewTask(&ds.DBCreateTaskRequest{
@@ -36,14 +38,16 @@ func (s *Service) AddNewTask(req *ds.CreateTaskRequest) *ds.CreateTaskResponse {
 
 func (s *Service) GetTasks(req *ds.GetTasksRequest) *ds.GetTasksResponse {
 	if req.AssigneeId < 1 {
-		ident, exist, err := s.storageAuth.GetAuthIdentitiesByLogin(req.AssigneeLogin)
+		ident, exists, err := s.getAuthIdentitiesByLogin(req.AssigneeLogin, req.AvoidCache())
 		if err != nil {
-			s.logger.ErrorKV("GetTasks.GetAuthIdentitiesByLogin", "error", err.Error())
+			s.logger.ErrorKV("GetTasks.getAuthIdentitiesByLogin", "error", err.Error())
 			return nil
 		}
-		if !exist {
-			return &ds.GetTasksResponse{Status: ds.Status{Message: ds.StatusNotFound}}
+
+		if !exists {
+			return &ds.GetTasksResponse{Status: ds.Status{Message: ds.StatusUserNotFound}}
 		}
+
 		req.AssigneeId = ident.UserID
 	}
 
@@ -60,6 +64,36 @@ func (s *Service) GetTasks(req *ds.GetTasksRequest) *ds.GetTasksResponse {
 	})
 	if err != nil {
 		s.logger.ErrorKV("GetTasks.GetTasks", "error", err.Error())
+		return nil
+	}
+
+	return res
+}
+
+func (s *Service) UpdateTask(req *ds.UpdateTaskRequest) *ds.UpdateTaskResponse {
+	const AvoidCache = false
+	ident, exists, err := s.getAuthIdentitiesByLogin(req.AssigneeLogin, AvoidCache)
+	if err != nil {
+		s.logger.ErrorKV("GetTasks.getAuthIdentitiesByLogin", "error", err.Error())
+		return nil
+	}
+
+	if !exists {
+		return &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusUserNotFound}}
+	}
+
+	res, err := s.storageApp.UpdateTask(&ds.DBUpdateTaskRequest{
+		JWTCreds:    req.JWTCreds,
+		TaskId:      req.TaskId,
+		AssigneeId:  ident.UserID,
+		Subject:     req.Subject,
+		Description: req.Description,
+		Status:      req.Status,
+		TeamId:      req.TeamId,
+		Version:     req.Version,
+	})
+	if err != nil {
+		s.logger.ErrorKV("UpdateTask.UpdateTask", "error", err.Error())
 		return nil
 	}
 

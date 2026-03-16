@@ -7,8 +7,9 @@ import (
 	ds "team-task-manager/internal/datastruct"
 )
 
-func (c *Client) AddNewUser(req *ds.DBRegisterRequest) (resp *ds.RegisterResponse, err error) {
-	err = c.db.ExecTx(defaultTxOpt, func(ctx context.Context, qtx IQuerier) error {
+func (c *Client) AddNewUser(req *ds.DBRegisterRequest) (*ds.RegisterResponse, error) {
+	var resp *ds.RegisterResponse
+	err := c.db.ExecTx(defaultTxOpt, func(ctx context.Context, qtx IQuerier) error {
 		res, err := qtx.CreateUserAuth(ctx, sqlc.CreateUserAuthParams{
 			Login:        req.Login,
 			PasswordHash: req.Password,
@@ -16,7 +17,6 @@ func (c *Client) AddNewUser(req *ds.DBRegisterRequest) (resp *ds.RegisterRespons
 		if err != nil {
 			if isDuplicate(err) {
 				resp = &ds.RegisterResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
-				return nil
 			}
 			return err
 		}
@@ -36,11 +36,14 @@ func (c *Client) AddNewUser(req *ds.DBRegisterRequest) (resp *ds.RegisterRespons
 		}
 
 		resp = &ds.RegisterResponse{Status: ds.Status{Message: ds.StatusSuccess}}
-
 		return nil
 	})
 
-	return
+	if resp != nil {
+		return resp, nil
+	}
+
+	return nil, err
 }
 
 func (c *Client) GetAuthIdentitiesByUserID(id int64) (*ds.AuthIdentities, bool, error) {
@@ -156,7 +159,7 @@ func (c *Client) UpdateRefreshToken(req *ds.DBUpdateRefreshToken) error {
 	}
 
 	if n == 0 {
-		return fmt.Errorf(ds.StatusNotFound)
+		return fmt.Errorf(ds.StatusResurceNotFound)
 	}
 
 	return nil
@@ -189,7 +192,7 @@ func (c *Client) DeleteAllUserSession(userId int64) error {
 	}
 
 	if n == 0 {
-		return fmt.Errorf(ds.StatusNotFound)
+		return fmt.Errorf(ds.StatusResurceNotFound)
 	}
 
 	return nil

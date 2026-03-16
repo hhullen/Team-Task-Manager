@@ -30,7 +30,8 @@ SELECT task_id,
     subject,
     status,
     description,
-    created_at
+    created_at,
+    version
 FROM tasks
 WHERE team_id = sqlc.arg(team_id)
   AND (status = sqlc.narg(status) OR sqlc.narg(status) IS NULL)
@@ -38,3 +39,22 @@ WHERE team_id = sqlc.arg(team_id)
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?;
 
+-- name: AddChangeToTaskHistory :execresult
+INSERT INTO tasks_history (task_id, changed_by, payload)
+VALUES (?, ?, ?);
+
+-- name: GetTaskForUpdate :one
+SELECT assignee_id, team_id, subject, status, description, version
+FROM tasks 
+WHERE task_id = ? 
+FOR UPDATE;
+
+-- name: UpdateTask :execresult
+UPDATE tasks 
+SET assignee_id = ?,
+    team_id = ?,
+    subject = ?,
+    status = ?,
+    description = ?,
+    version = version + 1
+WHERE task_id = ?;

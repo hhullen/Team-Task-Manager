@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS tasks (
-    task_id BIGINT AUTO_INCREMENT,
+    task_id BIGINT AUTO_INCREMENT NOT NULL,
     assignee_id BIGINT NOT NULL,
     created_by BIGINT NOT NULL,
     team_id BIGINT NOT NULL,
@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     status VARCHAR(16) NOT NULL DEFAULT 'todo',
     description TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    version BIGINT NOT NULL DEFAULT 1,
 
     PRIMARY KEY (team_id, task_id),
     INDEX idx_team_task (task_id),
