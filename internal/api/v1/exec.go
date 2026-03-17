@@ -20,7 +20,9 @@ func getStatusCode(s string) int {
 		return http.StatusNotFound
 	case ds.StatusServiceError:
 		return http.StatusInternalServerError
-	case ds.StatusAlreadyExists:
+	case ds.StatusUserAlreadyExists:
+		return http.StatusConflict
+	case ds.StatusResourceAlreadyExists:
 		return http.StatusConflict
 	case ds.StatusWrongLoginOrPassword:
 		return http.StatusUnauthorized

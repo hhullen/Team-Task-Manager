@@ -100,7 +100,7 @@ func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (*ds.Invit
 		})
 		if err != nil {
 			if isDuplicate(err) {
-				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
+				resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusUserAlreadyExists}}
 			}
 			return err
 		}
@@ -111,7 +111,7 @@ func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (*ds.Invit
 		}
 
 		if n != 1 {
-			resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
+			resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusUserAlreadyExists}}
 			return interruptTxErr
 		}
 

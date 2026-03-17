@@ -16,7 +16,7 @@ func (c *Client) AddNewUser(req *ds.DBRegisterRequest) (*ds.RegisterResponse, er
 		})
 		if err != nil {
 			if isDuplicate(err) {
-				resp = &ds.RegisterResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
+				resp = &ds.RegisterResponse{Status: ds.Status{Message: ds.StatusUserAlreadyExists}}
 			}
 			return err
 		}

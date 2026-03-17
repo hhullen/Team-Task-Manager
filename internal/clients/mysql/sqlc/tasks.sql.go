@@ -191,7 +191,19 @@ type GetTasksParams struct {
 	Offset     int32
 }
 
-func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, error) {
+type GetTasksRow struct {
+	TaskID      int64
+	AssigneeID  int64
+	CreatedBy   int64
+	TeamID      int64
+	Subject     string
+	Status      string
+	Description string
+	CreatedAt   time.Time
+	Version     int64
+}
+
+func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]GetTasksRow, error) {
 	rows, err := q.db.QueryContext(ctx, getTasks,
 		arg.TeamID,
 		arg.Status,
@@ -205,9 +217,9 @@ func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, err
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []GetTasksRow
 	for rows.Next() {
-		var i Task
+		var i GetTasksRow
 		if err := rows.Scan(
 			&i.TaskID,
 			&i.AssigneeID,
@@ -315,7 +327,8 @@ SET assignee_id = ?,
     subject = ?,
     status = ?,
     description = ?,
-    version = version + 1
+    version = version + 1,
+    updated_at = NOW()
 WHERE task_id = ?
 `
 

@@ -56,7 +56,8 @@ SET assignee_id = ?,
     subject = ?,
     status = ?,
     description = ?,
-    version = version + 1
+    version = version + 1,
+    updated_at = NOW()
 WHERE task_id = ?;
 
 -- name: GetTask :one

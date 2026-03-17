@@ -23,7 +23,7 @@ type Querier interface {
 	GetTask(ctx context.Context, taskID int64) (GetTaskRow, error)
 	GetTaskForUpdate(ctx context.Context, taskID int64) (GetTaskForUpdateRow, error)
 	GetTaskHistory(ctx context.Context, arg GetTaskHistoryParams) ([]GetTaskHistoryRow, error)
-	GetTasks(ctx context.Context, arg GetTasksParams) ([]Task, error)
+	GetTasks(ctx context.Context, arg GetTasksParams) ([]GetTasksRow, error)
 	GetTasksOfTeam(ctx context.Context, teamID int64) ([]GetTasksOfTeamRow, error)
 	GetTeamOwner(ctx context.Context, teamID int64) (int64, error)
 	GetUserIdentitiesById(ctx context.Context, id int64) (GetUserIdentitiesByIdRow, error)

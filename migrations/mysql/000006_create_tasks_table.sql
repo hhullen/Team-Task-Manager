@@ -9,10 +9,12 @@ CREATE TABLE IF NOT EXISTS tasks (
     status VARCHAR(16) NOT NULL DEFAULT 'todo',
     description TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     version BIGINT NOT NULL DEFAULT 1,
 
     PRIMARY KEY (team_id, task_id),
     INDEX idx_team_task (task_id),
+    INDEX idx_status_update_team (status, updated_at, team_id),
 
     CONSTRAINT fk_task_assignee_id
     FOREIGN KEY (assignee_id) 

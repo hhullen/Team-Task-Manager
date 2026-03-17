@@ -46,7 +46,7 @@ func (c *Client) AddNewTask(req *ds.DBCreateTaskRequest) (*ds.CreateTaskResponse
 				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusDataTooLong}}
 			}
 			if isDuplicate(err) {
-				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
+				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusResourceAlreadyExists}}
 			}
 			return err
 		}
@@ -85,7 +85,7 @@ func (c *Client) AddNewTask(req *ds.DBCreateTaskRequest) (*ds.CreateTaskResponse
 				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusDataTooLong}}
 			}
 			if isDuplicate(err) {
-				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusAlreadyExists}}
+				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusResourceAlreadyExists}}
 			}
 			return err
 		}
