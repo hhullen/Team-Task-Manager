@@ -11,6 +11,10 @@ import (
 	"team-task-manager/internal/supports"
 )
 
+const (
+	defaultTaskHistoryBatch = 10
+)
+
 func (c *Client) AddNewTask(req *ds.DBCreateTaskRequest) (*ds.CreateTaskResponse, error) {
 	var resp *ds.CreateTaskResponse
 	err := c.db.ExecTx(defaultTxOpt, func(ctx context.Context, qtx IQuerier) error {
@@ -151,7 +155,7 @@ func (c *Client) GetTasks(req *ds.GetTasksRequest) (*ds.GetTasksResponse, error)
 				Subject:     tasks[i].Subject,
 				Description: tasks[i].Description,
 				Status:      ds.TaskStatus(tasks[i].Status),
-				CreatedAt:   tasks[i].CreatedAt.Time,
+				CreatedAt:   tasks[i].CreatedAt,
 				Version:     tasks[i].Version,
 			})
 		}
@@ -280,4 +284,100 @@ func (c *Client) UpdateTask(req *ds.DBUpdateTaskRequest) (*ds.UpdateTaskResponse
 	}
 
 	return nil, err
+}
+
+func (c *Client) GetTaskHistory(req *ds.GetTaskHistoryRequest) (*ds.GetTaskHistoryResponse, error) {
+	var resp *ds.GetTaskHistoryResponse
+	err := c.db.ExecTx(defaultTxOpt, func(ctx context.Context, qtx IQuerier) error {
+		task, err := qtx.GetTask(ctx, req.TaskId)
+		if err != nil {
+			if isNoRows(err) {
+				resp = &ds.GetTaskHistoryResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}
+			}
+			return err
+		}
+
+		current := ds.TaskUpdatePatch{}
+		offset, limit := 0, 0
+		tmpResp := &ds.GetTaskHistoryResponse{}
+		for {
+			offset = limit
+			limit += defaultTaskHistoryBatch
+			histRow, err := qtx.GetTaskHistory(ctx, sqlc.GetTaskHistoryParams{
+				TaskID: req.TaskId,
+				Offset: int32(offset),
+				Limit:  int32(limit),
+			})
+			if err != nil {
+				if isNoRows(err) {
+					break
+				}
+				return err
+			}
+			if len(histRow) == 0 {
+				break
+			}
+
+			err = addpendVersionsToResp(tmpResp, histRow, &current, req.TaskId, task.TeamID)
+			if err != nil {
+				return err
+			}
+		}
+		resp = &ds.GetTaskHistoryResponse{
+			Status:      ds.Status{Message: ds.StatusSuccess},
+			TaskHistory: tmpResp.TaskHistory,
+		}
+		return nil
+
+	})
+
+	if resp != nil {
+		return resp, nil
+	}
+
+	return nil, err
+}
+
+func addpendVersionsToResp(resp *ds.GetTaskHistoryResponse, histRow []sqlc.GetTaskHistoryRow, current *ds.TaskUpdatePatch, taskId int64, teamId int64) error {
+	for i := range histRow {
+		updPatch := ds.TaskUpdatePatch{}
+		err := json.Unmarshal(histRow[i].Payload, &updPatch)
+		if err != nil {
+			return err
+		}
+
+		toApply := [][2]*string{
+			{&current.AssigneeId, &updPatch.AssigneeId},
+			{&current.Description, &updPatch.Description},
+			{&current.Status, &updPatch.Status},
+			{&current.Subject, &updPatch.Subject},
+			{&current.TeamId, &updPatch.TeamId},
+		}
+
+		for _, p := range toApply {
+			v, err := supports.ApplyPatchToText(*p[0], *p[1])
+			if err != nil {
+				return err
+			}
+			*p[0] = v
+		}
+
+		assigneeId, err := strconv.ParseInt(current.AssigneeId, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		resp.TaskHistory = append(resp.TaskHistory, ds.TaskOutput{
+			TaskId:      taskId,
+			Version:     int64(len(resp.TaskHistory) + 1),
+			AssigneeId:  assigneeId,
+			Subject:     current.Subject,
+			Description: current.Description,
+			Status:      ds.TaskStatus(current.Status),
+			CreatedAt:   histRow[i].CreatedAt,
+			CreatedBy:   histRow[i].ChangedBy,
+			TeamId:      teamId,
+		})
+	}
+	return nil
 }

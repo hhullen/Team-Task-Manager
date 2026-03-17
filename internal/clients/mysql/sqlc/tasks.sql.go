@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"time"
 )
 
 const addChangeToTaskHistory = `-- name: AddChangeToTaskHistory :execresult
@@ -51,6 +52,46 @@ func (q *Queries) AddNewTask(ctx context.Context, arg AddNewTaskParams) (sql.Res
 	)
 }
 
+const getTask = `-- name: GetTask :one
+SELECT assignee_id, 
+    created_by,
+    team_id,
+    subject,
+    status,
+    description,
+    created_at,
+    version
+FROM tasks 
+WHERE task_id = ?
+`
+
+type GetTaskRow struct {
+	AssigneeID  int64
+	CreatedBy   int64
+	TeamID      int64
+	Subject     string
+	Status      string
+	Description string
+	CreatedAt   time.Time
+	Version     int64
+}
+
+func (q *Queries) GetTask(ctx context.Context, taskID int64) (GetTaskRow, error) {
+	row := q.db.QueryRowContext(ctx, getTask, taskID)
+	var i GetTaskRow
+	err := row.Scan(
+		&i.AssigneeID,
+		&i.CreatedBy,
+		&i.TeamID,
+		&i.Subject,
+		&i.Status,
+		&i.Description,
+		&i.CreatedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
 const getTaskForUpdate = `-- name: GetTaskForUpdate :one
 SELECT assignee_id, team_id, subject, status, description, version
 FROM tasks 
@@ -79,6 +120,49 @@ func (q *Queries) GetTaskForUpdate(ctx context.Context, taskID int64) (GetTaskFo
 		&i.Version,
 	)
 	return i, err
+}
+
+const getTaskHistory = `-- name: GetTaskHistory :many
+SELECT payload, changed_by, created_at
+FROM tasks_history
+WHERE task_id = ?
+ORDER BY created_at
+LIMIT ? OFFSET ?
+`
+
+type GetTaskHistoryParams struct {
+	TaskID int64
+	Limit  int32
+	Offset int32
+}
+
+type GetTaskHistoryRow struct {
+	Payload   json.RawMessage
+	ChangedBy int64
+	CreatedAt time.Time
+}
+
+func (q *Queries) GetTaskHistory(ctx context.Context, arg GetTaskHistoryParams) ([]GetTaskHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTaskHistory, arg.TaskID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTaskHistoryRow
+	for rows.Next() {
+		var i GetTaskHistoryRow
+		if err := rows.Scan(&i.Payload, &i.ChangedBy, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getTasks = `-- name: GetTasks :many
@@ -169,7 +253,7 @@ type GetTasksOfTeamRow struct {
 	Subject     string
 	Status      string
 	Description string
-	CreatedAt   sql.NullTime
+	CreatedAt   time.Time
 }
 
 func (q *Queries) GetTasksOfTeam(ctx context.Context, teamID int64) ([]GetTasksOfTeamRow, error) {

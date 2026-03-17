@@ -349,6 +349,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/tasks/{id}/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get tasks history.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "get tasks history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "task_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "true",
+                        "description": "avoid_cache",
+                        "name": "avoid_cache",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.GetTaskHistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    }
+                }
+            }
+        },
         "/teams": {
             "get": {
                 "security": [
@@ -505,8 +562,7 @@ const docTemplate = `{
                 "description",
                 "status",
                 "subject",
-                "team_id",
-                "version"
+                "team_id"
             ],
             "properties": {
                 "assignee_login": {
@@ -526,10 +582,6 @@ const docTemplate = `{
                     "example": "service endpoint"
                 },
                 "team_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "version": {
                     "type": "integer",
                     "example": 1
                 }
@@ -567,6 +619,25 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "status message"
+                }
+            }
+        },
+        "datastruct.GetTaskHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "cached": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "status": {
+                    "type": "string",
+                    "example": "status message"
+                },
+                "taskHistory": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastruct.TaskOutput"
+                    }
                 }
             }
         },
@@ -757,7 +828,8 @@ const docTemplate = `{
                     "example": "core"
                 },
                 "team_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -829,7 +901,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Team Task Managere",
+	Title:            "Team Task Manager",
 	Description:      "Service for managing teams and tasks",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

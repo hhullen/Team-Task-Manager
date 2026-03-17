@@ -5,7 +5,6 @@
 package sqlc
 
 import (
-	"database/sql"
 	"encoding/json"
 	"time"
 )
@@ -26,7 +25,7 @@ type Task struct {
 	Subject     string
 	Status      string
 	Description string
-	CreatedAt   sql.NullTime
+	CreatedAt   time.Time
 	Version     int64
 }
 
@@ -34,7 +33,7 @@ type TasksHistory struct {
 	TaskID    int64
 	ChangedBy int64
 	Payload   json.RawMessage
-	CreatedAt sql.NullTime
+	CreatedAt time.Time
 }
 
 type Team struct {
@@ -47,7 +46,7 @@ type Team struct {
 type TeamMember struct {
 	UserID   int64
 	TeamID   int64
-	JoinedAt sql.NullTime
+	JoinedAt time.Time
 }
 
 type User struct {

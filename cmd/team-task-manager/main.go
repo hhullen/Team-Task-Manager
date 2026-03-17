@@ -18,7 +18,7 @@ import (
 	"team-task-manager/internal/supports"
 )
 
-// @title           Team Task Managere
+// @title           Team Task Manager
 // @version         1.0
 // @description     Service for managing teams and tasks
 // @termsOfService  http://swagger.io/terms/

@@ -186,3 +186,16 @@ func MakePatchFromTexts(v1, v2 string) string {
 	patch := dmp.PatchMake(v1, diffs)
 	return dmp.PatchToText(patch)
 }
+
+func ApplyPatchToText(text, patch string) (string, error) {
+	dmp := diffmatchpatch.New()
+	loadedPatches, _ := dmp.PatchFromText(patch)
+	newText, applies := dmp.PatchApply(loadedPatches, text)
+	for i := range applies {
+		if !applies[i] {
+			return "", fmt.Errorf("Patch is partially or not applied")
+		}
+	}
+
+	return newText, nil
+}

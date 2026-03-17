@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     subject VARCHAR(255) NOT NULL,
     status VARCHAR(16) NOT NULL DEFAULT 'todo',
     description TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     version BIGINT NOT NULL DEFAULT 1,
 
     PRIMARY KEY (team_id, task_id),

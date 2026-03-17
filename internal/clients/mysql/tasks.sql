@@ -58,3 +58,22 @@ SET assignee_id = ?,
     description = ?,
     version = version + 1
 WHERE task_id = ?;
+
+-- name: GetTask :one
+SELECT assignee_id, 
+    created_by,
+    team_id,
+    subject,
+    status,
+    description,
+    created_at,
+    version
+FROM tasks 
+WHERE task_id = ?;
+
+-- name: GetTaskHistory :many
+SELECT payload, changed_by, created_at
+FROM tasks_history
+WHERE task_id = ?
+ORDER BY created_at
+LIMIT ? OFFSET ?;

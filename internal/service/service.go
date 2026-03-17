@@ -50,6 +50,7 @@ type IAppStorage interface {
 	AddNewTask(*ds.DBCreateTaskRequest) (*ds.CreateTaskResponse, error)
 	GetTasks(*ds.GetTasksRequest) (*ds.GetTasksResponse, error)
 	UpdateTask(req *ds.DBUpdateTaskRequest) (*ds.UpdateTaskResponse, error)
+	GetTaskHistory(*ds.GetTaskHistoryRequest) (*ds.GetTaskHistoryResponse, error)
 }
 
 type ISecretProvider interface {

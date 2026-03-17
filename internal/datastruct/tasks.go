@@ -126,3 +126,15 @@ type UpdateTaskRequest struct {
 type UpdateTaskResponse struct {
 	Status
 }
+
+type GetTaskHistoryRequest struct {
+	JWTCreds
+	AvoidCacheFlag
+	TaskId int64 `uri:"task_id" validate:"required" example:"1"`
+}
+
+type GetTaskHistoryResponse struct {
+	Status
+	CachedStatus
+	TaskHistory []TaskOutput
+}

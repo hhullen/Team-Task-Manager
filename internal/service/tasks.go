@@ -99,3 +99,16 @@ func (s *Service) UpdateTask(req *ds.UpdateTaskRequest) *ds.UpdateTaskResponse {
 
 	return res
 }
+
+func (s *Service) GetTaskHistory(req *ds.GetTaskHistoryRequest) *ds.GetTaskHistoryResponse {
+	key := makeCacheKey("TaskHistory", supports.FNV1Hash([]byte(strconv.FormatInt(req.TaskId, 10))))
+	res, err := execWithCache(s, key, req.AvoidCache(), func() (*ds.GetTaskHistoryResponse, error) {
+		return s.storageApp.GetTaskHistory(req)
+	})
+	if err != nil {
+		s.logger.ErrorKV("GetTaskHistory.GetTaskHistory", "error", err.Error())
+		return nil
+	}
+
+	return res
+}

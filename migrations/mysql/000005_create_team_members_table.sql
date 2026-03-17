@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS team_members (
     user_id BIGINT NOT NULL,
     team_id BIGINT NOT NULL,
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (user_id, team_id),
     
