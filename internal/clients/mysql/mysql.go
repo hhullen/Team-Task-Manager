@@ -18,6 +18,8 @@ const (
 	defaultRequestTimeout = time.Second * 5
 	defaultOpenConns      = 50
 	defaultConnLifeTime   = time.Minute * 5
+	defaultConnIdleTime   = time.Minute * 3
+	defaultMonitorDelay   = time.Minute * 1
 )
 
 var interruptTxErr = errors.New("tx interrupted")
@@ -31,6 +33,10 @@ type IDB interface {
 	ExecTx(*sql.TxOptions, func(context.Context, IQuerier) error) error
 	Querier() IQuerier
 	CtxWithCancel() (context.Context, context.CancelFunc)
+}
+
+type ILogger interface {
+	InfoKV(message string, argsKV ...any)
 }
 
 type DB struct {
@@ -62,6 +68,7 @@ func NewMySQLConn(ctx context.Context,
 	db.SetMaxOpenConns(defaultOpenConns)
 	db.SetMaxIdleConns(defaultOpenConns)
 	db.SetConnMaxLifetime(defaultConnLifeTime)
+	db.SetConnMaxIdleTime(defaultConnIdleTime)
 
 	if err := db.Ping(); err != nil {
 		return nil, err
@@ -70,7 +77,24 @@ func NewMySQLConn(ctx context.Context,
 	return db, nil
 }
 
-func NewClient(ctx context.Context, conn *sql.DB) *Client {
+func NewClient(ctx context.Context, conn *sql.DB, log ILogger) *Client {
+	go func() {
+		ticker := time.NewTicker(defaultMonitorDelay)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				stats := conn.Stats()
+				log.InfoKV("STATS", " in_use", stats.InUse, "idle", stats.Idle,
+					"wait_count", stats.WaitCount, "wait_duration", stats.WaitDuration,
+					"max_open_conns", stats.MaxOpenConnections, "timestamp", time.Now())
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	return buildClient(&DB{
 		ctx:  ctx,
 		sqlc: sqlc.New(conn),

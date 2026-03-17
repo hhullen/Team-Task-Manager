@@ -48,9 +48,11 @@ func main() {
 
 	apiLog := logger.NewLogger(os.Stdout, "API")
 	serviceLog := logger.NewLogger(os.Stdout, "SERVICE")
+	dbLog := logger.NewLogger(os.Stdout, "DB")
 	gracefulterminator.Add(func() {
 		apiLog.Stop()
 		serviceLog.Stop()
+		dbLog.Stop()
 	})
 
 	secrets := secretprovider.NewSecretProvider()
@@ -92,7 +94,7 @@ func main() {
 		}
 	})
 
-	dbClient := mysql.NewClient(ctx, dbConn)
+	dbClient := mysql.NewClient(ctx, dbConn, dbLog)
 
 	redisHost, err := secrets.ReadSecret("redis_host")
 	if err != nil {
