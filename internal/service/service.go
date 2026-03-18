@@ -71,13 +71,17 @@ func NewService(ctx context.Context, aus IAuthStorage, aps IAppStorage, l ILogge
 	s := buildService(ctx, aus, aps, l, c, sp)
 
 	s.cron = cron.New()
-	s.cron.AddFunc("0 0 * * *", func() {
+	_, err := s.cron.AddFunc("0 0 * * *", func() {
 		err := s.storageAuth.CleanupUslessTokens()
 		if err != nil {
 			s.logger.ErrorKV("CleanupUslessTokens", "error", err)
 		}
 	})
-	s.cron.Start()
+	if err != nil {
+		s.logger.FatalKV("NewService.AddFunc", "error", err)
+	} else {
+		s.cron.Start()
+	}
 
 	gracefulterminator.Add(func() {
 		<-s.cron.Stop().Done()

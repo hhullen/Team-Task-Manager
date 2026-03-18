@@ -1,20 +1,15 @@
 PROJECT_NAME=team-task-manager
 
-MOCKGEN_INSTALL=go install github.com/golang/mock/mockgen@latest
-MOCKGEN_BIN=$(shell where mockgen)
+PWD=$(pwd)
+RM=rm -rf
+EXTENSION=
 
-SQLC_INSTALL=go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-SQLC_BIN=$(shell where sqlc)
-
-SWAG_INSTALL=go install github.com/swaggo/swag/cmd/swag@latest
-SWAG_BIN=$(shell where swag)
+MOCKGEN_BIN=$(shell go env GOPATH)/bin/mockgen$(EXTENSION)
+SQLC_BIN=$(shell go env GOPATH)/bin/sqlc$(EXTENSION)
+SWAG_BIN=$(shell go env GOPATH)/bin/swag$(EXTENSION)
 SWAG_DOCS_DIR=internal/docs
-
-SHADOW_INSTALL=golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
-SHADOW_BIN=$(shell where shadow)
-
-ERRCHECK_INSTALL=go install github.com/kisielk/errcheck@latest
-ERRCHECK_BIN=$(shell where errcheck)
+SHADOW_BIN=$(shell go env GOPATH)/bin/shadow$(EXTENSION)
+ERRCHECK_BIN=$(shell go env GOPATH)/bin/errcheck$(EXTENSION)
 
 COVERAGE_FILE=coverage.out
 NOT_FILTERED_SUFF=_not_filtered
@@ -22,10 +17,6 @@ FILTER_COVERAGE_FROM_MOCK=grep -v "mock" $(COVERAGE_FILE)$(NOT_FILTERED_SUFF) | 
 
 SERVICE_DATASTRUCT_DIR=internal/datastruct
 API_DIR=internal/api/v1
-
-PWD=$(pwd)
-RM=rm -rf
-EXTENSION=.out
 
 MIGRATOR_DIR=./cmd/migrator
 MIGRATOR_BIN=$(MIGRATOR_DIR)/migrator$(EXTENSION)
@@ -44,47 +35,43 @@ ifeq ($(OS),Windows_NT)
 	PWD=$(shell powershell -Command "(Get-Location).Path")
 	RM=echo
 	RM_POSTFIX=| Remove-Item -Force -ErrorAction SilentlyContinue; exit 0
-	SQLC_BIN=$(strip $(shell (Get-Command sqlc.exe -ErrorAction SilentlyContinue).Source))
-	MOCKGEN_BIN=$(strip $(shell (Get-Command mockgen.exe -ErrorAction SilentlyContinue).Source))
-	SWAG_BIN=$(strip $(shell (Get-Command swag.exe -ErrorAction SilentlyContinue).Source))
-	SHADOW_BIN=$(strip $(shell (Get-Command shadow.exe -ErrorAction SilentlyContinue).Source))
-	ERRCHECK_BIN=$(strip $(shell (Get-Command errcheck.exe -ErrorAction SilentlyContinue).Source))
 	FILTER_COVERAGE_FROM_MOCK=(Get-Content $(COVERAGE_FILE)$(NOT_FILTERED_SUFF)) | Where-Object { $$_ -notmatch "mock" } | Where-Object { $$_ -notmatch "sqlc" } | Set-Content $(COVERAGE_FILE)
 endif
 
-.PHONY: deps errcheck linter generate-sqlc generate-mocks generage-swag migrations-up migrations-down migrations-status start-local-database stop-local-database clean-local-database start-local-redis stop-local-redis clean-local-redis run-local run-local-fast service service-stop service-rebuild coverage-info coverage-html clean
+
+.PHONY: deps errcheck linter generate-sqlc generate-mocks generage-swag migrations-up migrations-down migrations-status start-local-database stop-local-database clean-local-database start-local-redis stop-local-redis clean-local-redis run-local run-local-fast service service-stop service-rebuild coverage-info coverage-html clean-go-cache clean
 
 deps:
 	go mod download
 
-errcheck:
-ifeq ($(ERRCHECK_BIN),)
-	$(ERRCHECK_INSTALL)
-endif
+$(ERRCHECK_BIN):
+	go install -a github.com/kisielk/errcheck@latest
+
+errcheck: $(ERRCHECK_BIN)
 	errcheck.exe -verbose -ignoregenerated ./...
 
-linter:
-ifeq ($(SHADOW_BIN),)
-	$(SHADOW_INSTALL)
-endif
+$(SHADOW_BIN):
+	go install -a golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
+
+linter: $(SHADOW_BIN)
 	go vet -vettool=$(SHADOW_BIN) ./...
 
-generate-sqlc:
-ifeq ($(SQLC_BIN),)
-	$(SQLC_INSTALL)
-endif
+$(SQLC_BIN):
+	go install -a github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+generate-sqlc: $(SQLC_BIN)
 	sqlc generate
 
-generate-mocks:
-ifeq ($(MOCKGEN_BIN),)
-	$(MOCKGEN_INSTALL)
-endif
+$(MOCKGEN_BIN):
+	go install -a github.com/golang/mock/mockgen@latest
+
+generate-mocks: $(MOCKGEN_BIN)
 	go generate ./...
 
-generate-swag:
-ifeq ($(SWAG_BIN),)
-	$(SWAG_INSTALL)
-endif
+$(SWAG_BIN):
+	go install -a github.com/swaggo/swag/cmd/swag@latest
+
+generate-swag: $(SWAG_BIN)
 	swag init -d $(TEAM_TASK_MANAGER_DIR),$(SERVICE_DATASTRUCT_DIR),$(API_DIR) -o $(SWAG_DOCS_DIR)
 
 $(MIGRATOR_BIN):
@@ -165,6 +152,10 @@ coverage-info: $(COVERAGE_FILE)
 
 coverage-html: $(COVERAGE_FILE)
 	go tool cover "-html=coverage.out"
+
+clean-go-cache:
+	go clean -cache -modcache
+	go env -w GOPROXY=https://proxy.golang.org,direct
 
 clean:
 	$(RM) $(MIGRATOR_BIN) $(TEAM_TASK_MANAGER_BIN) $(COVERAGE_FILE) $(COVERAGE_FILE)$(NOT_FILTERED_SUFF) $(RM_POSTFIX)

@@ -45,7 +45,9 @@ func init() {
 		WriteTimeout: writeTimeout,
 	}
 
-	go server.ListenAndServe()
+	go func() {
+		_ = server.ListenAndServe()
+	}()
 }
 
 func ReportResponse(method, url string, statusCode int, miliseconds int64) error {
