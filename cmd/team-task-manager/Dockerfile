@@ -1,4 +1,4 @@
-FROM golang:1.24.3-alpine3.22 AS builder
+FROM golang:1.25-alpine3.23 AS builder
 
 WORKDIR /build
 
@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build ./cmd/team-task-manager
 
-FROM alpine:3.22.0
+FROM alpine:3.23.0
 
 WORKDIR /app
 COPY --from=builder /build .

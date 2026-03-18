@@ -226,6 +226,10 @@ func (c *Client) UpdateTask(req *ds.DBUpdateTaskRequest) (*ds.UpdateTaskResponse
 				Description: req.Description,
 			})
 			if err != nil {
+				if isLongData(err) {
+					resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusDataTooLong}}
+					return interruptTxErr
+				}
 				return err
 			}
 

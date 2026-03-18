@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	JWTSecretKey = "JWT_SECRET"
+	JWTSecretKey = "jwt_secret"
 
 	UserRoleKey = "role"
 	UserIDKey   = "user_id"

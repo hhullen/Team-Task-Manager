@@ -5,7 +5,7 @@ services:
     container_name: team_task_manager
     build:
       context: .
-      dockerfile: ./cmd/team_task_manager/Dockerfile
+      dockerfile: ./cmd/team-task-manager/Dockerfile
     ports:
       - 8080:8080
     init: true
@@ -63,7 +63,7 @@ services:
       - ./init/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
       - ./init/init_roles.sql:/sql_init/init_roles.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$(cat /run/secrets/root_password) || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$(cat /run/secrets/db_root_password) || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -88,32 +88,32 @@ services:
 
 secrets:
   db_root_password:
-    file: ./secrets/db_root_password.txt
+    file: ./secrets/db_root_password
   db_app_password:
-    file: ./secrets/db_app_password.txt
+    file: ./secrets/db_app_password
   db_app_user:
-    file: ./secrets/db_app_user.txt
+    file: ./secrets/db_app_user
   db_migrator_password:
-    file: ./secrets/db_migrator_password.txt
+    file: ./secrets/db_migrator_password
   db_migrator_user:
-    file: ./secrets/db_migrator_user.txt
+    file: ./secrets/db_migrator_user
   db_name:
-    file: ./secrets/db_name.txt
+    file: ./secrets/db_name
   db_host:
-    file: ./secrets/db_host.txt
+    file: ./secrets/db_host
   db_port:
-    file: ./secrets/db_port.txt
+    file: ./secrets/db_port
   redis_password:
-    file: ./secrets/redis_password.txt
+    file: ./secrets/redis_password
   redis_host:
-    file: ./secrets/redis_host.txt
+    file: ./secrets/redis_host
   redis_port:
-    file: ./secrets/redis_port.txt
+    file: ./secrets/redis_port
   jwt_secret:
-    file: ./secrets/JWT_SECRET
+    file: ./secrets/jwt_secret
 
 volumes:
-  team_task_manager_postgres_data:
+  team_task_manager_mysql_data:
   team_task_manager_redis_data:
 
 networks:
