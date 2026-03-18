@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"team-task-manager/internal/clients/mysql/sqlc"
+	"team-task-manager/internal/metrics"
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/go-sql-driver/mysql"
@@ -86,9 +87,10 @@ func NewClient(ctx context.Context, conn *sql.DB, log ILogger) *Client {
 			select {
 			case <-ticker.C:
 				stats := conn.Stats()
-				log.InfoKV("STATS", " in_use", stats.InUse, "idle", stats.Idle,
+				log.InfoKV("STATS", "in_use", stats.InUse, "idle", stats.Idle,
 					"wait_count", stats.WaitCount, "wait_duration", stats.WaitDuration,
 					"max_open_conns", stats.MaxOpenConnections, "timestamp", time.Now())
+				metrics.RepordDBStats(stats)
 			case <-ctx.Done():
 				return
 			}

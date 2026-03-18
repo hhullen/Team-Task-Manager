@@ -10,6 +10,7 @@ import (
 
 	ds "team-task-manager/internal/datastruct"
 	_ "team-task-manager/internal/docs"
+	"team-task-manager/internal/metrics"
 	"team-task-manager/internal/supports"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -210,6 +211,10 @@ func mainMiddleware(next http.Handler, log ILogger) http.Handler {
 
 		te := time.Since(ts)
 		log.InfoKV("Request", "method", r.Method, "url", r.URL.String(), "duration(ms)", te.Milliseconds(), "status_code", rwi.code)
+		err := metrics.ReportResponse(r.Method, r.URL.String(), rwi.code, te.Milliseconds())
+		if err != nil {
+			log.ErrorKV("mainMiddleware.ReportResponse", "error", err)
+		}
 	})
 }
 
