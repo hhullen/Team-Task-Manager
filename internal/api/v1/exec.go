@@ -40,6 +40,10 @@ func getStatusCode(s string) int {
 		return http.StatusConflict
 	case ds.StatusIvalidVersion:
 		return http.StatusBadRequest
+	case ds.StatusFailedExctractingRequest:
+		return http.StatusBadRequest
+	case ds.StatusFailedValidatingRequest:
+		return http.StatusBadRequest
 	}
 
 	return http.StatusOK
@@ -122,7 +126,7 @@ func Exec[ReqT any, RespT IWithStatus](a ExecArgs[ReqT, RespT]) {
 		msg := "failed extracting request"
 		a.api.logger.ErrorKV(msg, "error", err.Error())
 
-		resp := ds.Status{Message: supports.Concat(msg, ": ", err.Error())}
+		resp := ds.Status{Message: ds.StatusFailedExctractingRequest}
 		err = writeJsonResponse(a.httpResponse, resp)
 		if err != nil {
 			a.api.logger.ErrorKV("failed write response",
@@ -140,7 +144,7 @@ func Exec[ReqT any, RespT IWithStatus](a ExecArgs[ReqT, RespT]) {
 		msg := "failed validating request"
 		a.api.logger.ErrorKV(msg, "error", err.Error(), "request", req)
 
-		resp := ds.Status{Message: supports.Concat(msg, ": ", err.Error())}
+		resp := ds.Status{Message: ds.StatusFailedValidatingRequest}
 		err = writeJsonResponse(a.httpResponse, resp)
 		if err != nil {
 			a.api.logger.ErrorKV("failed write response",
@@ -151,9 +155,9 @@ func Exec[ReqT any, RespT IWithStatus](a ExecArgs[ReqT, RespT]) {
 
 	resp := a.serviceFunc(&req)
 	if resp == nil {
-		resp := ds.Status{Message: ds.StatusServiceError}
 		msg := "failed execute request on service"
 		a.api.logger.ErrorKV(msg, "error", "service return no response", "request", req)
+		resp := ds.Status{Message: ds.StatusServiceError}
 		err := writeJsonResponse(a.httpResponse, resp)
 		if err != nil {
 

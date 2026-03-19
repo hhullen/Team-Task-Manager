@@ -5,25 +5,16 @@ import (
 	"team-task-manager/internal/supports"
 )
 
-const (
-	defaultSecretsDir          = "./secrets/"
-	defaultContainerSecretsDir = "/run/secrets/"
-)
-
 type SecretProvider struct {
 	mtx       sync.RWMutex
 	cache     map[string]string
 	secretDir string
 }
 
-func NewSecretProvider() *SecretProvider {
-	dir := defaultSecretsDir
-	if supports.IsInContainer() {
-		dir = defaultContainerSecretsDir
-	}
+func NewSecretProvider(secretDir string) *SecretProvider {
 	return &SecretProvider{
 		cache:     make(map[string]string),
-		secretDir: dir,
+		secretDir: secretDir,
 	}
 }
 

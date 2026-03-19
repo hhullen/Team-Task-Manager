@@ -18,6 +18,12 @@ import (
 	"team-task-manager/internal/supports"
 )
 
+const (
+	address      = ":8080"
+	defaultSecretsDir          = "./secrets/"
+	defaultContainerSecretsDir = "/run/secrets/"
+)
+
 // @title           Team Task Manager
 // @version         1.0
 // @description     Service for managing teams and tasks
@@ -55,7 +61,12 @@ func main() {
 		dbLog.Stop()
 	})
 
-	secrets := secretprovider.NewSecretProvider()
+	secretDir := defaultSecretsDir
+	if supports.IsInContainer() {
+		secretDir = defaultContainerSecretsDir
+	}
+
+	secrets := secretprovider.NewSecretProvider(secretDir)
 
 	dbHost, err := secrets.ReadSecret("db_host")
 	if err != nil {
@@ -131,7 +142,7 @@ func main() {
 
 	limiter := ratelimiter.NewRedisRateLimiter(ctx, redisConn)
 
-	apiService, err := api.NewAPI(ctx, service, service, secrets, limiter, apiLog)
+	apiService, err := api.NewAPI(ctx, address, service, service, secrets, limiter, apiLog)
 	if err != nil {
 		log.Fatal(err)
 	}

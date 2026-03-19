@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	address      = ":8080"
 	readTimeout  = time.Second * 5
 	writeTimeout = time.Second * 5
 
@@ -85,6 +84,7 @@ type IServer interface {
 
 type IRouter interface {
 	Handle(pattern string, handler http.Handler)
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 type ILogger interface {
@@ -139,7 +139,7 @@ type API struct {
 	jwtSecret string
 }
 
-func NewAPI(ctx context.Context,
+func NewAPI(ctx context.Context, address string,
 	app IAppService,
 	auth IAuthService,
 	sec ISecretProvider,
@@ -200,6 +200,10 @@ func (a *API) StartListening() error {
 func (a *API) Stop() error {
 	a.logger.InfoKV("Server Shutdown")
 	return a.server.Shutdown(a.ctx)
+}
+
+func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a.router.ServeHTTP(w, r)
 }
 
 func mainMiddleware(next http.Handler, log ILogger) http.Handler {
