@@ -22,7 +22,7 @@ type TeamDescription struct {
 
 type ListUserTeamsResponse struct {
 	Status
-	List []TeamDescription
+	List []TeamDescription `json:"list"`
 }
 
 type DBInviteUserToTeamRequest struct {

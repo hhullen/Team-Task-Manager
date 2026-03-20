@@ -82,8 +82,14 @@ func (s *Service) Refresh(req *ds.RefreshRequest) *ds.RefreshResponse {
 		return nil
 	}
 
+	if !exist || dbRT.Revoked {
+		return &ds.RefreshResponse{
+			Status: ds.Status{Message: ds.StatusInvalidToken},
+		}
+	}
+
 	expired := time.Now().After(dbRT.ExpiresAt)
-	if !exist || dbRT.Revoked || (expired && !dbRT.Used) {
+	if expired && !dbRT.Used {
 		return &ds.RefreshResponse{
 			Status: ds.Status{Message: ds.StatusInvalidToken},
 		}
