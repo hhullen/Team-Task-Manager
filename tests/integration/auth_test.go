@@ -11,16 +11,16 @@ const (
 	jsonContentType = "application/json"
 )
 
-func (s *ServicesTestSuite) TestAuthRegister() {
-	payload := map[string]string{
-		"login":    "test1",
-		"name":     "test1",
-		"password": "test1",
+func (s *ServicesTestSuite) Test_Auth_Register() {
+	payload := map[string]any{
+		"login":    "test_auth_register",
+		"name":     "test_auth_register",
+		"password": "test_auth_register",
 	}
 	uri := apiPrefix + "/register"
 
 	s.Run("Ok", func() {
-		w := s.JSONBodyRequest(http.MethodPost,payload, uri, [][2]string{})
+		w := s.JSONBodyRequest(http.MethodPost, payload, uri, [][2]string{})
 
 		s.Equal(http.StatusOK, w.Code)
 
@@ -34,7 +34,7 @@ func (s *ServicesTestSuite) TestAuthRegister() {
 	})
 
 	s.Run("Already registered", func() {
-		w := s.JSONBodyRequest(http.MethodPost,payload, uri, [][2]string{})
+		w := s.JSONBodyRequest(http.MethodPost, payload, uri, [][2]string{})
 
 		s.Equal(http.StatusConflict, w.Code)
 
@@ -43,8 +43,11 @@ func (s *ServicesTestSuite) TestAuthRegister() {
 	})
 
 	s.Run("Without required field", func() {
-		delete(payload, "login")
-		w := s.JSONBodyRequest(http.MethodPost,payload, uri, [][2]string{})
+		payload := map[string]any{
+			"name":     "test_auth_register",
+			"password": "test_auth_register",
+		}
+		w := s.JSONBodyRequest(http.MethodPost, payload, uri, [][2]string{})
 
 		s.Equal(http.StatusBadRequest, w.Code)
 
@@ -53,30 +56,30 @@ func (s *ServicesTestSuite) TestAuthRegister() {
 	})
 }
 
-func (s *ServicesTestSuite) TestAuthLogin() {
-	payload := map[string]string{
-		"login":    "test2",
-		"name":     "test2",
-		"password": "test2",
+func (s *ServicesTestSuite) Test_Auth_Login() {
+	payload := map[string]any{
+		"login":    "test_auth_login",
+		"name":     "test_auth_login",
+		"password": "test_auth_login",
 	}
 
-	w := s.JSONBodyRequest(http.MethodPost,payload, apiPrefix+"/register", [][2]string{})
+	w := s.JSONBodyRequest(http.MethodPost, payload, apiPrefix+"/register", [][2]string{})
 	s.Equal(http.StatusOK, w.Code)
 
-	payload = map[string]string{
-		"login":    "test2",
-		"password": "test2",
+	payload = map[string]any{
+		"login":    "test_auth_login",
+		"password": "test_auth_login",
 	}
 
 	uri := apiPrefix + "/login"
 
 	s.Run("Ok", func() {
-		w := s.JSONBodyRequest(http.MethodPost,payload, uri, [][2]string{})
+		w := s.JSONBodyRequest(http.MethodPost, payload, uri, [][2]string{})
 		s.Equal(http.StatusOK, w.Code)
 
 		res := w.Result()
 
-		v := map[string]string{}
+		v := map[string]any{}
 
 		err := json.NewDecoder(w.Body).Decode(&v)
 		s.Nil(err)
@@ -99,33 +102,35 @@ func (s *ServicesTestSuite) TestAuthLogin() {
 
 	s.Run("Wrong password", func() {
 		payload["password"] = "wrong"
-		w := s.JSONBodyRequest(http.MethodPost,payload, uri, [][2]string{})
+		w := s.JSONBodyRequest(http.MethodPost, payload, uri, [][2]string{})
 		s.Equal(http.StatusUnauthorized, w.Code)
 	})
 
 	s.Run("Without required field", func() {
-		delete(payload, "password")
-		w := s.JSONBodyRequest(http.MethodPost,payload, uri, [][2]string{})
+		payload = map[string]any{
+			"login": "test_auth_login",
+		}
+		w := s.JSONBodyRequest(http.MethodPost, payload, uri, [][2]string{})
 		s.Equal(http.StatusBadRequest, w.Code)
 	})
 }
 
-func (s *ServicesTestSuite) TestAuthRefresh() {
-	payload := map[string]string{
-		"login":    "test3",
-		"name":     "test3",
-		"password": "test3",
+func (s *ServicesTestSuite) Test_Auth_Refresh() {
+	payload := map[string]any{
+		"login":    "test_auth_refresh",
+		"name":     "test_auth_refresh",
+		"password": "test_auth_refresh",
 	}
 
-	w := s.JSONBodyRequest(http.MethodPost,payload, apiPrefix+"/register", [][2]string{})
+	w := s.JSONBodyRequest(http.MethodPost, payload, apiPrefix+"/register", [][2]string{})
 	s.Equal(http.StatusOK, w.Code)
 
-	payload = map[string]string{
-		"login":    "test3",
-		"password": "test3",
+	payload = map[string]any{
+		"login":    "test_auth_refresh",
+		"password": "test_auth_refresh",
 	}
 
-	w = s.JSONBodyRequest(http.MethodPost,payload, apiPrefix+"/login", [][2]string{})
+	w = s.JSONBodyRequest(http.MethodPost, payload, apiPrefix+"/login", [][2]string{})
 	s.Equal(http.StatusOK, w.Code)
 
 	res := w.Result()
@@ -149,7 +154,7 @@ func (s *ServicesTestSuite) TestAuthRefresh() {
 
 		s.Equal(http.StatusOK, w.Code)
 
-		v := map[string]string{}
+		v := map[string]any{}
 
 		err := json.NewDecoder(w.Body).Decode(&v)
 		s.Nil(err)

@@ -8,14 +8,14 @@ import (
 	ds "team-task-manager/internal/datastruct"
 )
 
-func (s *ServicesTestSuite) TestTeamsCreateTeam() {
+func (s *ServicesTestSuite) Test_Teams_CreateTeam() {
 	_ = s.register("test1")
 	at, _ := s.login("test1")
 
 	uri := apiPrefix + "/teams"
 
 	s.Run("Ok", func() {
-		payload := map[string]string{
+		payload := map[string]any{
 			"name":        "name",
 			"description": "desc",
 		}
@@ -34,7 +34,7 @@ func (s *ServicesTestSuite) TestTeamsCreateTeam() {
 	})
 
 	s.Run("Without required field", func() {
-		payload := map[string]string{
+		payload := map[string]any{
 			"description": "desc",
 		}
 
@@ -46,7 +46,7 @@ func (s *ServicesTestSuite) TestTeamsCreateTeam() {
 	})
 }
 
-func (s *ServicesTestSuite) TestTeamsListUserTeams() {
+func (s *ServicesTestSuite) Test_Teams_ListUserTeams() {
 	_ = s.register("test1")
 	at, _ := s.login("test1")
 
@@ -56,7 +56,7 @@ func (s *ServicesTestSuite) TestTeamsListUserTeams() {
 	uri := apiPrefix + "/teams"
 
 	s.Run("Ok", func() {
-		w := s.JSONBodyRequest(http.MethodGet, map[string]string{}, uri, [][2]string{
+		w := s.JSONBodyRequest(http.MethodGet, map[string]any{}, uri, [][2]string{
 			{"Authorization", "Bearer " + at},
 		})
 
@@ -82,7 +82,7 @@ func (s *ServicesTestSuite) TestTeamsListUserTeams() {
 	})
 }
 
-func (s *ServicesTestSuite) TestTeamsInviteUserToTeam() {
+func (s *ServicesTestSuite) Test_Teams_InviteUserToTeam() {
 	s.register("test1")
 	s.register("test2")
 	at, _ := s.login("test1")
@@ -97,14 +97,14 @@ func (s *ServicesTestSuite) TestTeamsInviteUserToTeam() {
 	uri := apiPrefix + "/teams/" + strconv.Itoa(teamId) + "/invite"
 
 	s.Run("Ok", func() {
-		w := s.JSONBodyRequest(http.MethodPost, map[string]string{"login": "test2"}, uri, [][2]string{
+		w := s.JSONBodyRequest(http.MethodPost, map[string]any{"login": "test2"}, uri, [][2]string{
 			{"Authorization", "Bearer " + at},
 		})
 		s.Equal(http.StatusOK, w.Code)
 	})
 
 	s.Run("Wrong Login", func() {
-		w := s.JSONBodyRequest(http.MethodPost, map[string]string{"login": "thisIsWrongMadafakas"}, uri, [][2]string{
+		w := s.JSONBodyRequest(http.MethodPost, map[string]any{"login": "thisIsWrongMadafakas"}, uri, [][2]string{
 			{"Authorization", "Bearer " + at},
 		})
 

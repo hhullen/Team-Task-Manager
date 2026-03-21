@@ -170,6 +170,14 @@ func isNoRows(err error) bool {
 	return errors.Is(err, sql.ErrNoRows)
 }
 
+func isForeignKeyErr(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlerr.ER_NO_REFERENCED_ROW_2 {
+		return true
+	}
+	return false
+}
+
 func nullString(s *string) sql.NullString {
 	if s == nil {
 		return sql.NullString{

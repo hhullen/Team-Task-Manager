@@ -484,7 +484,7 @@ paths:
       tags:
       - Tasks
   /tasks/{id}/comment:
-    put:
+    post:
       consumes:
       - application/json
       description: add task comment.

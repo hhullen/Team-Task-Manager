@@ -207,7 +207,7 @@ func TestServicesSuite(t *testing.T) {
 	suite.Run(t, new(ServicesTestSuite))
 }
 
-func (s *ServicesTestSuite) JSONBodyRequest(method string, payload map[string]string, uri string, header [][2]string) *httptest.ResponseRecorder {
+func (s *ServicesTestSuite) JSONBodyRequest(method string, payload map[string]any, uri string, header [][2]string) *httptest.ResponseRecorder {
 	body, _ := json.Marshal(payload)
 
 	req := httptest.NewRequest(method, uri, bytes.NewBuffer(body))
@@ -223,7 +223,7 @@ func (s *ServicesTestSuite) JSONBodyRequest(method string, payload map[string]st
 	return w
 }
 
-func (s *ServicesTestSuite) QueryRequest(method string, payloadQuery, payloadBody map[string]string, uri string, header [][2]string) *httptest.ResponseRecorder {
+func (s *ServicesTestSuite) QueryRequest(method string, payloadQuery map[string]string, payloadBody map[string]any, uri string, header [][2]string) *httptest.ResponseRecorder {
 	body, _ := json.Marshal(payloadBody)
 
 	req := httptest.NewRequest(method, uri, bytes.NewBuffer(body))
@@ -247,7 +247,7 @@ func (s *ServicesTestSuite) QueryRequest(method string, payloadQuery, payloadBod
 }
 
 func (s *ServicesTestSuite) register(name string) *httptest.ResponseRecorder {
-	payload := map[string]string{
+	payload := map[string]any{
 		"login":    name,
 		"name":     name,
 		"password": name,
@@ -257,7 +257,7 @@ func (s *ServicesTestSuite) register(name string) *httptest.ResponseRecorder {
 }
 
 func (s *ServicesTestSuite) login(name string) (at, rt string) {
-	payload := map[string]string{
+	payload := map[string]any{
 		"login":    name,
 		"password": name,
 	}
@@ -284,7 +284,7 @@ func (s *ServicesTestSuite) login(name string) (at, rt string) {
 }
 
 func (s *ServicesTestSuite) createTeam(name, at string) *httptest.ResponseRecorder {
-	payload := map[string]string{
+	payload := map[string]any{
 		"name":        name,
 		"description": name,
 	}
@@ -295,6 +295,30 @@ func (s *ServicesTestSuite) createTeam(name, at string) *httptest.ResponseRecord
 		{"Authorization", "Bearer " + at},
 	})
 
+	s.Equal(http.StatusOK, w.Code)
+
+	return w
+}
+
+func (s *ServicesTestSuite) createTaks(name, teamName, at string) *httptest.ResponseRecorder {
+	uri := apiPrefix + "/tasks"
+
+	var teamId int
+	err := s.db.QueryRow("SELECT team_id FROM teams WHERE name = ?", teamName).Scan(&teamId)
+	s.NoError(err)
+	s.True(teamId > 0)
+
+	payload := map[string]any{
+		"assignee_login": name,
+		"subject":        name,
+		"description":    name,
+		"status":         "todo",
+		"team_id":        teamId,
+	}
+
+	w := s.JSONBodyRequest(http.MethodPost, payload, uri, [][2]string{
+		{"Authorization", "Bearer " + at},
+	})
 	s.Equal(http.StatusOK, w.Code)
 
 	return w

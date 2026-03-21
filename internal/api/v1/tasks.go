@@ -24,7 +24,7 @@ func (a *API) setupTasksHandlers() {
 		jwtBasedMiddleware(a, http.HandlerFunc(a.UpdateTask)))
 	a.router.Handle(pattern(http.MethodGet, taskHistory),
 		jwtBasedMiddleware(a, http.HandlerFunc(a.GetTaskHistory)))
-	a.router.Handle(pattern(http.MethodPut, taskComment),
+	a.router.Handle(pattern(http.MethodPost, taskComment),
 		jwtBasedMiddleware(a, http.HandlerFunc(a.AddTaskComment)))
 }
 
@@ -172,7 +172,7 @@ func (a *API) GetTaskHistory(w http.ResponseWriter, r *http.Request) {
 // @Success      200   {object}  ds.AddTaskCommentResponse
 // @Failure      400   {object}  ds.Status
 // @Failure      500   {object}  ds.Status
-// @Router       /tasks/{id}/comment [put]
+// @Router       /tasks/{id}/comment [post]
 func (a *API) AddTaskComment(w http.ResponseWriter, r *http.Request) {
 	Exec(ExecArgs[ds.AddTaskCommentRequest, ds.AddTaskCommentResponse]{
 		serviceFunc:    a.appService.AddTaskComment,

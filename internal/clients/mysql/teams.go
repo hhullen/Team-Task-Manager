@@ -15,6 +15,9 @@ func (c *Client) AddNewTeam(req *ds.CreateTeamRequest) (resp *ds.CreateTeamRespo
 			Description: req.Description,
 		})
 		if err != nil {
+			if isForeignKeyErr(err) {
+				resp = &ds.CreateTeamResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}
+			}
 			return err
 		}
 
@@ -27,8 +30,10 @@ func (c *Client) AddNewTeam(req *ds.CreateTeamRequest) (resp *ds.CreateTeamRespo
 			UserID: req.UserID,
 			TeamID: id,
 		})
-
 		if err != nil {
+			if isForeignKeyErr(err) {
+				resp = &ds.CreateTeamResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}
+			}
 			return err
 		}
 

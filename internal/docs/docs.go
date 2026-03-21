@@ -350,7 +350,7 @@ const docTemplate = `{
             }
         },
         "/tasks/{id}/comment": {
-            "put": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []

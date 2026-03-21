@@ -48,6 +48,9 @@ func (c *Client) AddNewTask(req *ds.DBCreateTaskRequest) (*ds.CreateTaskResponse
 			if isDuplicate(err) {
 				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusResourceAlreadyExists}}
 			}
+			if isForeignKeyErr(err) {
+				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}
+			}
 			return err
 		}
 
@@ -86,6 +89,9 @@ func (c *Client) AddNewTask(req *ds.DBCreateTaskRequest) (*ds.CreateTaskResponse
 			}
 			if isDuplicate(err) {
 				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusResourceAlreadyExists}}
+			}
+			if isForeignKeyErr(err) {
+				resp = &ds.CreateTaskResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}
 			}
 			return err
 		}
@@ -195,6 +201,21 @@ func (c *Client) UpdateTask(req *ds.DBUpdateTaskRequest) (*ds.UpdateTaskResponse
 	var resp *ds.UpdateTaskResponse
 	err := c.db.ExecTx(defaultTxOpt, func(ctx context.Context, qtx IQuerier) error {
 		oldTaks, err := qtx.GetTaskForUpdate(ctx, req.TaskId)
+		if err != nil {
+			if isNoRows(err) {
+				resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}
+			}
+			return err
+		}
+
+		if req.Version > oldTaks.Version {
+			resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusIvalidVersion}}
+			return interruptTxErr
+		} else if req.Version < oldTaks.Version {
+			resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusConflict}}
+			return interruptTxErr
+		}
+
 		if req.AssigneeId == oldTaks.AssigneeID &&
 			req.Description == oldTaks.Description &&
 			req.Status == ds.TaskStatus(oldTaks.Status) &&
@@ -202,13 +223,6 @@ func (c *Client) UpdateTask(req *ds.DBUpdateTaskRequest) (*ds.UpdateTaskResponse
 			req.TeamId == oldTaks.TeamID {
 			resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusSuccess}}
 			return nil
-		}
-
-		if err != nil {
-			if isNoRows(err) {
-				resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}
-			}
-			return err
 		}
 
 		if req.Role != ds.RoleAdmin {
@@ -231,77 +245,69 @@ func (c *Client) UpdateTask(req *ds.DBUpdateTaskRequest) (*ds.UpdateTaskResponse
 			}
 		}
 
-		if req.Version > oldTaks.Version {
-			resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusIvalidVersion}}
-			return interruptTxErr
-		} else if req.Version < oldTaks.Version {
-			resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusConflict}}
-			return interruptTxErr
-		} else {
-			res, err := qtx.UpdateTask(ctx, sqlc.UpdateTaskParams{
-				AssigneeID:  req.AssigneeId,
-				TaskID:      req.TaskId,
-				TeamID:      req.TeamId,
-				Subject:     req.Subject,
-				Status:      string(req.Status),
-				Description: req.Description,
-			})
-			if err != nil {
-				if isLongData(err) {
-					resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusDataTooLong}}
-					return interruptTxErr
-				}
-				return err
+		res, err := qtx.UpdateTask(ctx, sqlc.UpdateTaskParams{
+			AssigneeID:  req.AssigneeId,
+			TaskID:      req.TaskId,
+			TeamID:      req.TeamId,
+			Subject:     req.Subject,
+			Status:      string(req.Status),
+			Description: req.Description,
+		})
+		if err != nil {
+			if isLongData(err) {
+				resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusDataTooLong}}
+				return interruptTxErr
 			}
-
-			if n, err := res.RowsAffected(); err != nil {
-				return err
-			} else if n < 1 {
-				return fmt.Errorf("no rows affected on UpdateTask.UpdateTask")
-			}
-
-			v := ds.TaskUpdatePatch{
-				TeamId: supports.MakePatchFromTexts(
-					strconv.FormatInt(oldTaks.TeamID, 10),
-					strconv.FormatInt(req.TeamId, 10)),
-				AssigneeId: supports.MakePatchFromTexts(
-					strconv.FormatInt(oldTaks.AssigneeID, 10),
-					strconv.FormatInt(req.AssigneeId, 10)),
-				Status: supports.MakePatchFromTexts(
-					oldTaks.Status, string(req.Status)),
-				Subject: supports.MakePatchFromTexts(
-					oldTaks.Subject, req.Subject),
-				Description: supports.MakePatchFromTexts(
-					oldTaks.Description, req.Description),
-			}
-
-			payload, err := json.Marshal(v)
-			if err != nil {
-				return err
-			}
-
-			res, err = qtx.AddChangeToTaskHistory(ctx, sqlc.AddChangeToTaskHistoryParams{
-				TaskID:    req.TaskId,
-				ChangedBy: req.UserID,
-				Payload:   json.RawMessage(payload),
-			})
-			if err != nil {
-				if isLongData(err) {
-					resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusDataTooLong}}
-					return interruptTxErr
-				}
-				return err
-			}
-
-			if n, err := res.RowsAffected(); err != nil {
-				return err
-			} else if n < 1 {
-				return fmt.Errorf("no rows affected on  AddNewTask.AddChangeToTaskHistory")
-			}
-
-			resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusSuccess}}
-			return nil
+			return err
 		}
+
+		if n, err := res.RowsAffected(); err != nil {
+			return err
+		} else if n < 1 {
+			return fmt.Errorf("no rows affected on UpdateTask.UpdateTask")
+		}
+
+		v := ds.TaskUpdatePatch{
+			TeamId: supports.MakePatchFromTexts(
+				strconv.FormatInt(oldTaks.TeamID, 10),
+				strconv.FormatInt(req.TeamId, 10)),
+			AssigneeId: supports.MakePatchFromTexts(
+				strconv.FormatInt(oldTaks.AssigneeID, 10),
+				strconv.FormatInt(req.AssigneeId, 10)),
+			Status: supports.MakePatchFromTexts(
+				oldTaks.Status, string(req.Status)),
+			Subject: supports.MakePatchFromTexts(
+				oldTaks.Subject, req.Subject),
+			Description: supports.MakePatchFromTexts(
+				oldTaks.Description, req.Description),
+		}
+
+		payload, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+
+		res, err = qtx.AddChangeToTaskHistory(ctx, sqlc.AddChangeToTaskHistoryParams{
+			TaskID:    req.TaskId,
+			ChangedBy: req.UserID,
+			Payload:   json.RawMessage(payload),
+		})
+		if err != nil {
+			if isLongData(err) {
+				resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusDataTooLong}}
+				return interruptTxErr
+			}
+			return err
+		}
+
+		if n, err := res.RowsAffected(); err != nil {
+			return err
+		} else if n < 1 {
+			return fmt.Errorf("no rows affected on  AddNewTask.AddChangeToTaskHistory")
+		}
+
+		resp = &ds.UpdateTaskResponse{Status: ds.Status{Message: ds.StatusSuccess}}
+		return nil
 	})
 
 	if resp != nil {
@@ -416,6 +422,9 @@ func (c *Client) AddTaskComment(req *ds.AddTaskCommentRequest) (*ds.AddTaskComme
 		Comment: req.Text,
 	})
 	if err != nil {
+		if isForeignKeyErr(err) {
+			return &ds.AddTaskCommentResponse{Status: ds.Status{Message: ds.StatusResurceNotFound}}, nil
+		}
 		return nil, err
 	}
 
