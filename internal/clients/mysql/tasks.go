@@ -143,10 +143,30 @@ func (c *Client) GetTasks(req *ds.GetTasksRequest) (*ds.GetTasksResponse, error)
 			return err
 		}
 
+		tasksIds := make([]int64, len(tasks))
+		for i := range tasks {
+			tasksIds[i] = tasks[i].TaskID
+		}
+
+		commentsRaw, err := qtx.GetTasksComments(ctx, tasksIds)
+		if err != nil {
+			return err
+		}
+
+		commentsByTaskId := map[int64][]ds.CommentOutput{}
+		for i := range commentsRaw {
+			id := commentsRaw[i].TaskID
+			commentsByTaskId[id] = append(commentsByTaskId[id], ds.CommentOutput{
+				Text:      commentsRaw[i].Comment,
+				CreatedAt: commentsRaw[i].CreatedAt,
+			})
+		}
+
 		resp = &ds.GetTasksResponse{
 			Tasks: make([]ds.TaskOutput, 0, len(tasks)),
 		}
 		for i := range tasks {
+			comments, _ := commentsByTaskId[tasks[i].TaskID]
 			resp.Tasks = append(resp.Tasks, ds.TaskOutput{
 				TaskId:      tasks[i].TaskID,
 				AssigneeId:  tasks[i].AssigneeID,
@@ -157,6 +177,7 @@ func (c *Client) GetTasks(req *ds.GetTasksRequest) (*ds.GetTasksResponse, error)
 				Status:      ds.TaskStatus(tasks[i].Status),
 				CreatedAt:   tasks[i].CreatedAt,
 				Version:     tasks[i].Version,
+				Comments:    comments,
 			})
 		}
 		resp.Status = ds.Status{Message: ds.StatusSuccess}
@@ -384,4 +405,25 @@ func addpendVersionsToResp(resp *ds.GetTaskHistoryResponse, histRow []sqlc.GetTa
 		})
 	}
 	return nil
+}
+
+func (c *Client) AddTaskComment(req *ds.AddTaskCommentRequest) (*ds.AddTaskCommentResponse, error) {
+	ctx, cancel := c.db.CtxWithCancel()
+	defer cancel()
+
+	res, err := c.db.Querier().AddTaskComment(ctx, sqlc.AddTaskCommentParams{
+		TaskID:  req.TaskId,
+		Comment: req.Text,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if n, err := res.RowsAffected(); err != nil {
+		return nil, err
+	} else if n < 1 {
+		return nil, fmt.Errorf("no rows affected on AddTaskComment.AddTaskComment")
+	}
+
+	return &ds.AddTaskCommentResponse{Status: ds.Status{Message: ds.StatusSuccess}}, nil
 }

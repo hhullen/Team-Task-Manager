@@ -1,5 +1,26 @@
 basePath: /api/v1
 definitions:
+  datastruct.AddTaskCommentRequest:
+    properties:
+      text:
+        example: well done
+        type: string
+    required:
+    - text
+    type: object
+  datastruct.AddTaskCommentResponse:
+    properties:
+      status:
+        example: status message
+        type: string
+    type: object
+  datastruct.CommentOutput:
+    properties:
+      created_at:
+        type: string
+      text:
+        type: string
+    type: object
   datastruct.CreateTaskRequest:
     properties:
       assignee_login:
@@ -160,6 +181,10 @@ definitions:
     properties:
       assignee_id:
         type: integer
+      comments:
+        items:
+          $ref: '#/definitions/datastruct.CommentOutput'
+        type: array
       created_at:
         type: string
       created_by:
@@ -427,7 +452,7 @@ paths:
       - application/json
       description: update task.
       parameters:
-      - description: team id
+      - description: task id
         in: path
         name: id
         required: true
@@ -456,6 +481,43 @@ paths:
       security:
       - BearerAuth: []
       summary: update task
+      tags:
+      - Tasks
+  /tasks/{id}/comment:
+    put:
+      consumes:
+      - application/json
+      description: add task comment.
+      parameters:
+      - description: task_id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: comment
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/datastruct.AddTaskCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/datastruct.AddTaskCommentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/datastruct.Status'
+      security:
+      - BearerAuth: []
+      summary: add task comment
       tags:
       - Tasks
   /tasks/{id}/history:

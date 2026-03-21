@@ -70,7 +70,8 @@ SELECT assignee_id,
     created_at,
     version
 FROM tasks 
-WHERE task_id = ?;
+WHERE task_id = ?
+ORDER BY task_id;
 
 -- name: GetTaskHistory :many
 SELECT payload, changed_by, created_at
@@ -78,3 +79,13 @@ FROM tasks_history
 WHERE task_id = ?
 ORDER BY created_at
 LIMIT ? OFFSET ?;
+
+-- name: GetTasksComments :many
+SELECT task_id, comment, created_at
+FROM tasks_comments
+WHERE task_id IN (sqlc.slice('task_ids'))
+ORDER BY task_id;
+
+-- name: AddTaskComment :execresult
+INSERT INTO tasks_comments (task_id, comment)
+VALUES (?, ?);

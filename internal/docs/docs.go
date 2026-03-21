@@ -312,7 +312,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "team id",
+                        "description": "task id",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -332,6 +332,64 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/datastruct.UpdateTaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.Status"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{id}/comment": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "add task comment.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "add task comment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "task_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "comment",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.AddTaskCommentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/datastruct.AddTaskCommentResponse"
                         }
                     },
                     "400": {
@@ -555,6 +613,38 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "datastruct.AddTaskCommentRequest": {
+            "type": "object",
+            "required": [
+                "text"
+            ],
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "example": "well done"
+                }
+            }
+        },
+        "datastruct.AddTaskCommentResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "status message"
+                }
+            }
+        },
+        "datastruct.CommentOutput": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
         "datastruct.CreateTaskRequest": {
             "type": "object",
             "required": [
@@ -784,6 +874,12 @@ const docTemplate = `{
             "properties": {
                 "assignee_id": {
                     "type": "integer"
+                },
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastruct.CommentOutput"
+                    }
                 },
                 "created_at": {
                     "type": "string"

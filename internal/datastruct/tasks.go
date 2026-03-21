@@ -76,21 +76,22 @@ type GetTasksRequest struct {
 }
 
 type TaskOutput struct {
-	TaskId      int64      `json:"task_id"`
-	Version     int64      `json:"version"`
-	AssigneeId  int64      `json:"assignee_id"`
-	CreatedBy   int64      `json:"created_by"`
-	TeamId      int64      `json:"team_id"`
-	Subject     string     `json:"subject"`
-	Description string     `json:"description"`
-	Status      TaskStatus `json:"status"`
-	CreatedAt   time.Time  `json:"created_at"`
+	TaskId      int64           `json:"task_id"`
+	Version     int64           `json:"version"`
+	AssigneeId  int64           `json:"assignee_id"`
+	CreatedBy   int64           `json:"created_by"`
+	TeamId      int64           `json:"team_id"`
+	Subject     string          `json:"subject"`
+	Description string          `json:"description"`
+	Status      TaskStatus      `json:"status"`
+	CreatedAt   time.Time       `json:"created_at"`
+	Comments    []CommentOutput `json:"comments"`
 }
 
 type GetTasksResponse struct {
 	Status
 	CachedStatus
-	Tasks []TaskOutput
+	Tasks []TaskOutput `json:"tasks"`
 }
 
 type TaskUpdatePatch struct {
@@ -130,11 +131,26 @@ type UpdateTaskResponse struct {
 type GetTaskHistoryRequest struct {
 	JWTCreds
 	AvoidCacheFlag
-	TaskId int64 `uri:"task_id" validate:"required" example:"1"`
+	TaskId int64 `uri:"task_id" validate:"required" swaggerignore:"true"`
 }
 
 type GetTaskHistoryResponse struct {
 	Status
 	CachedStatus
 	TaskHistory []TaskOutput
+}
+
+type CommentOutput struct {
+	Text      string    `json:"text"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type AddTaskCommentRequest struct {
+	JWTCreds
+	Text   string `json:"text" validate:"required" example:"well done"`
+	TaskId int64  `uri:"task_id" swaggerignore:"true"`
+}
+
+type AddTaskCommentResponse struct {
+	Status
 }

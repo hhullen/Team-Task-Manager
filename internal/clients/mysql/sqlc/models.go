@@ -30,6 +30,12 @@ type Task struct {
 	Version     int64
 }
 
+type TasksComment struct {
+	TaskID    int64
+	Comment   string
+	CreatedAt time.Time
+}
+
 type TasksHistory struct {
 	TaskID    int64
 	ChangedBy int64

@@ -12,6 +12,7 @@ const (
 	tasksPrefix    = apiPrefix + "/tasks"
 	taskByIdPrefix = tasksPrefix + "/{id}"
 	taskHistory    = taskByIdPrefix + "/history"
+	taskComment    = taskByIdPrefix + "/comment"
 )
 
 func (a *API) setupTasksHandlers() {
@@ -23,6 +24,8 @@ func (a *API) setupTasksHandlers() {
 		jwtBasedMiddleware(a, http.HandlerFunc(a.UpdateTask)))
 	a.router.Handle(pattern(http.MethodGet, taskHistory),
 		jwtBasedMiddleware(a, http.HandlerFunc(a.GetTaskHistory)))
+	a.router.Handle(pattern(http.MethodPut, taskComment),
+		jwtBasedMiddleware(a, http.HandlerFunc(a.AddTaskComment)))
 }
 
 // CreateTask create new task
@@ -90,7 +93,7 @@ func (a *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        id    path      integer  true  "team id"
+// @Param        id    path      integer  true  "task id"
 // @Param        input body      ds.UpdateTaskRequest  true "task"
 // @Success      200   {object}  ds.UpdateTaskResponse
 // @Failure      400   {object}  ds.Status
@@ -150,6 +153,43 @@ func (a *API) GetTaskHistory(w http.ResponseWriter, r *http.Request) {
 
 			v.TaskId = id
 			return extractSchemaQuery(r, v)
+		},
+		httpResponse: &w,
+		httpRequest:  r,
+		api:          a,
+	})
+}
+
+// AddTaskComment add task comment
+// @Summary      add task comment
+// @Description  add task comment.
+// @Tags         Tasks
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path      integer  true  "task_id"
+// @Param        input body      ds.AddTaskCommentRequest  true "comment"
+// @Success      200   {object}  ds.AddTaskCommentResponse
+// @Failure      400   {object}  ds.Status
+// @Failure      500   {object}  ds.Status
+// @Router       /tasks/{id}/comment [put]
+func (a *API) AddTaskComment(w http.ResponseWriter, r *http.Request) {
+	Exec(ExecArgs[ds.AddTaskCommentRequest, ds.AddTaskCommentResponse]{
+		serviceFunc:    a.appService.AddTaskComment,
+		responseWriter: writeJsonResponse[*ds.AddTaskCommentResponse],
+		requestExtractor: func(r *http.Request, v *ds.AddTaskCommentRequest) error {
+			idRaw := r.PathValue("id")
+			if idRaw == "" {
+				return fmt.Errorf("task id was not provided")
+			}
+
+			id, err := strconv.ParseInt(idRaw, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			v.TaskId = id
+			return extractJsonBody(r, v)
 		},
 		httpResponse: &w,
 		httpRequest:  r,

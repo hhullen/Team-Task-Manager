@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -52,6 +53,20 @@ func (q *Queries) AddNewTask(ctx context.Context, arg AddNewTaskParams) (sql.Res
 	)
 }
 
+const addTaskComment = `-- name: AddTaskComment :execresult
+INSERT INTO tasks_comments (task_id, comment)
+VALUES (?, ?)
+`
+
+type AddTaskCommentParams struct {
+	TaskID  int64
+	Comment string
+}
+
+func (q *Queries) AddTaskComment(ctx context.Context, arg AddTaskCommentParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, addTaskComment, arg.TaskID, arg.Comment)
+}
+
 const getTask = `-- name: GetTask :one
 SELECT assignee_id, 
     created_by,
@@ -63,6 +78,7 @@ SELECT assignee_id,
     version
 FROM tasks 
 WHERE task_id = ?
+ORDER BY task_id
 `
 
 type GetTaskRow struct {
@@ -231,6 +247,46 @@ func (q *Queries) GetTasks(ctx context.Context, arg GetTasksParams) ([]GetTasksR
 			&i.CreatedAt,
 			&i.Version,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTasksComments = `-- name: GetTasksComments :many
+SELECT task_id, comment, created_at
+FROM tasks_comments
+WHERE task_id IN (/*SLICE:task_ids*/?)
+ORDER BY task_id
+`
+
+func (q *Queries) GetTasksComments(ctx context.Context, taskIds []int64) ([]TasksComment, error) {
+	query := getTasksComments
+	var queryParams []interface{}
+	if len(taskIds) > 0 {
+		for _, v := range taskIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:task_ids*/?", strings.Repeat(",?", len(taskIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:task_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TasksComment
+	for rows.Next() {
+		var i TasksComment
+		if err := rows.Scan(&i.TaskID, &i.Comment, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -15,6 +15,7 @@ type Querier interface {
 	AddNewTask(ctx context.Context, arg AddNewTaskParams) (sql.Result, error)
 	AddNewTeam(ctx context.Context, arg AddNewTeamParams) (sql.Result, error)
 	AddRefreshToken(ctx context.Context, arg AddRefreshTokenParams) error
+	AddTaskComment(ctx context.Context, arg AddTaskCommentParams) (sql.Result, error)
 	CleanupUselessTokens(ctx context.Context) error
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	CreateUserAuth(ctx context.Context, arg CreateUserAuthParams) (sql.Result, error)
@@ -25,6 +26,7 @@ type Querier interface {
 	GetTaskHistory(ctx context.Context, arg GetTaskHistoryParams) ([]GetTaskHistoryRow, error)
 	GetTasks(ctx context.Context, arg GetTasksParams) ([]GetTasksRow, error)
 	GetTasksAssigneeNotTeamMember(ctx context.Context) ([]Task, error)
+	GetTasksComments(ctx context.Context, taskIds []int64) ([]TasksComment, error)
 	GetTasksOfTeam(ctx context.Context, teamID int64) ([]GetTasksOfTeamRow, error)
 	GetTeamOwner(ctx context.Context, teamID int64) (int64, error)
 	GetTeamTasksCompletedFor7Days(ctx context.Context) ([]GetTeamTasksCompletedFor7DaysRow, error)

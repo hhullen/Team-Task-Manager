@@ -112,3 +112,13 @@ func (s *Service) GetTaskHistory(req *ds.GetTaskHistoryRequest) *ds.GetTaskHisto
 
 	return res
 }
+
+func (s *Service) AddTaskComment(req *ds.AddTaskCommentRequest) *ds.AddTaskCommentResponse {
+	res, err := s.storageApp.AddTaskComment(req)
+	if err != nil {
+		s.logger.ErrorKV("AddTaskComment.AddTaskComment", "error", err.Error())
+		return nil
+	}
+
+	return res
+}

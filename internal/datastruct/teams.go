@@ -34,7 +34,7 @@ type DBInviteUserToTeamRequest struct {
 type InviteUserToTeamRequest struct {
 	JWTCreds
 	UserLoginToInvite string `json:"login" validate:"required" example:"VaKadyk359"`
-	TeamId            int64  `uri:"team_id" validate:"required" example:"1" swaggerignore:"true"`
+	TeamId            int64  `uri:"team_id" validate:"required" swaggerignore:"true"`
 }
 
 type InviteUserToTeamResponse struct {
