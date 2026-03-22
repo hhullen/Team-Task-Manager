@@ -167,13 +167,13 @@ func (s *Service) createTokensPair(identities *ds.AuthIdentities) (at string, rt
 		},
 	}
 
-	sing, err := s.secret.ReadSecret(ds.JWTSecretKey)
+	sign, err := s.secret.ReadSecret(ds.JWTSecretKey)
 	if err != nil {
 		return
 	}
 
 	atRaw := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-	at, err = atRaw.SignedString([]byte(sing))
+	at, err = atRaw.SignedString([]byte(sign))
 	if err != nil {
 		return
 	}

@@ -53,7 +53,11 @@ func (c *Client) AddNewTeam(req *ds.CreateTeamRequest) (resp *ds.CreateTeamRespo
 		return nil
 	})
 
-	return
+	if resp != nil {
+		return resp, nil
+	}
+
+	return nil, err
 }
 
 func (c *Client) GetUserTeams(userId int64) (*ds.ListUserTeamsResponse, error) {
@@ -110,14 +114,10 @@ func (c *Client) AddUserToUserTeam(req *ds.DBInviteUserToTeamRequest) (*ds.Invit
 			return err
 		}
 
-		n, err := res.RowsAffected()
-		if err != nil {
+		if n, err := res.RowsAffected(); err != nil {
 			return err
-		}
-
-		if n != 1 {
-			resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusUserAlreadyExists}}
-			return interruptTxErr
+		} else if n != 1 {
+			return fmt.Errorf("no rows affected on AddUserToUserTeam.AddMemberToTeam")
 		}
 
 		resp = &ds.InviteUserToTeamResponse{Status: ds.Status{Message: ds.StatusSuccess}}

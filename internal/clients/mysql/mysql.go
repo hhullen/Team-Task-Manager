@@ -15,6 +15,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+//go:generate mockgen -destination=mysql_mock.go -package=mysql . IQuerier,IDB,ILogger
+//go:generate mockgen -destination=sql_mock.go -package=mysql database/sql Result
+
 const (
 	defaultRequestTimeout = time.Second * 5
 	defaultOpenConns      = 50

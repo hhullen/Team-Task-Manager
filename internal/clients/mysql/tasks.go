@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultTaskHistoryBatch = 10
+	defaultTaskHistoryBatch = 50
 )
 
 func (c *Client) AddNewTask(req *ds.DBCreateTaskRequest) (*ds.CreateTaskResponse, error) {
@@ -147,6 +147,11 @@ func (c *Client) GetTasks(req *ds.GetTasksRequest) (*ds.GetTasksResponse, error)
 		})
 		if err != nil {
 			return err
+		}
+
+		if len(tasks) == 0 {
+			resp = &ds.GetTasksResponse{Status: ds.Status{Message: ds.StatusSuccess}}
+			return nil
 		}
 
 		tasksIds := make([]int64, len(tasks))
