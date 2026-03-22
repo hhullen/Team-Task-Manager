@@ -1,6 +1,7 @@
 package secretprovider
 
 import (
+	"path/filepath"
 	"sync"
 	"team-task-manager/internal/supports"
 )
@@ -26,7 +27,7 @@ func (sp *SecretProvider) ReadSecret(key string) (string, error) {
 		return v, nil
 	}
 
-	v, err := supports.ReadSecretFile(supports.Concat(sp.secretDir, key))
+	v, err := supports.ReadSecretFile(filepath.Join(sp.secretDir, key))
 	if err != nil {
 		return "", err
 	}

@@ -42,11 +42,9 @@ func StructValidator() *validator.Validate {
 	return &validatorInstance
 }
 
-func ArgonHash(s string) (string, error) {
+func ArgonHash(s string) string {
 	salt := make([]byte, hashSettings.saltLength)
-	if _, err := rand.Read(salt); err != nil {
-		return "", err
-	}
+	_, _ = rand.Read(salt)
 
 	hash := argon2.IDKey([]byte(s), salt, hashSettings.iterations,
 		hashSettings.memory, hashSettings.threads, hashSettings.keyLength)
@@ -67,7 +65,7 @@ func ArgonHash(s string) (string, error) {
 	b.WriteByte('$')
 	b.WriteString(base64.RawStdEncoding.EncodeToString(hash))
 
-	return b.String(), nil
+	return b.String()
 }
 
 func IsStringArgonHash(s, hash string) (bool, error) {
@@ -77,7 +75,7 @@ func IsStringArgonHash(s, hash string) (bool, error) {
 		return false, fmt.Errorf("invalid hash format")
 	}
 
-	memory, iterations, parallelism, err := ParseParams(vals[3])
+	memory, iterations, parallelism, err := parseParams(vals[3])
 	if err != nil {
 		return false, err
 	}
@@ -97,7 +95,7 @@ func IsStringArgonHash(s, hash string) (bool, error) {
 	return subtle.ConstantTimeCompare(unb64hash, comparisonHash) == 1, nil
 }
 
-func ParseParams(paramsStr string) (m, t uint32, p uint8, err error) {
+func parseParams(paramsStr string) (m, t uint32, p uint8, err error) {
 	parts := strings.Split(paramsStr, ",")
 	if len(parts) != 3 {
 		return 0, 0, 0, fmt.Errorf("invalid params format")
@@ -142,6 +140,7 @@ func ReadSecretFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer f.Close()
 
 	secret := ""
 	_, err = fmt.Fscan(f, &secret)

@@ -14,13 +14,7 @@ import (
 )
 
 func (s *Service) RegisterUser(req *ds.RegisterRequest) *ds.RegisterResponse {
-	hashPassword, err := supports.ArgonHash(req.Password)
-	if err != nil {
-		s.logger.ErrorKV("RegisterUser.ArgonHash", "error", err.Error())
-		return nil
-	}
-
-	req.Password = hashPassword
+	req.Password = supports.ArgonHash(req.Password)
 
 	res, err := s.storageAuth.AddNewUser(&ds.DBRegisterRequest{
 		UserCreds: req.UserCreds,

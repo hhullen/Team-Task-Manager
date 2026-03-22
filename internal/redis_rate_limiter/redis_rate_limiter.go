@@ -7,6 +7,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+//go:generate mockgen -destination=redis_rate_limiter_mock.go -package=ratelimiter . ILimiter
+
 type ILimiter interface {
 	Allow(ctx context.Context, key string, limit redis_rate.Limit) (*redis_rate.Result, error)
 }

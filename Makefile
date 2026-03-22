@@ -144,7 +144,7 @@ service-rebuild:
 	docker compose up --build --renew-anon-volumes --force-recreate
 
 $(COVERAGE_FILE):
-	go test "-coverpkg=./..." "-coverprofile=$(COVERAGE_FILE)$(NOT_FILTERED_SUFF)" ./...
+	go test "-coverpkg=./..." "-coverprofile=$(COVERAGE_FILE)$(NOT_FILTERED_SUFF)" -v -short ./internal/...
 	$(FILTER_COVERAGE_FROM_MOCK)
 
 coverage-info: $(COVERAGE_FILE)
