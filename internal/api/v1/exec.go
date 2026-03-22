@@ -12,6 +12,16 @@ import (
 	"team-task-manager/internal/supports"
 )
 
+type ExecArgs[ReqT any, RespT IWithStatus] struct {
+	api              *API
+	serviceFunc      func(*ReqT) *RespT
+	requestExtractor func(r *http.Request, v *ReqT) error
+	responseWriter   func(w http.ResponseWriter, v *RespT) error
+	httpRequest      *http.Request
+	httpResponse     http.ResponseWriter
+	validator        func(s *ReqT) error
+}
+
 func getStatusCode(s string) int {
 	switch s {
 	case ds.StatusUserNotFound:
@@ -58,18 +68,18 @@ func extractJsonBody[ReqT any](r *http.Request, v ReqT) error {
 	return setJWTUserCredsIfRequire(r, v)
 }
 
-func writeJsonResponse[RespT IWithStatus](w *http.ResponseWriter, resp RespT) error {
+func writeJsonResponse[RespT IWithStatus](w http.ResponseWriter, resp RespT) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&resp); err != nil {
 		return err
 	}
 
-	(*w).Header().Set(contentLenKey, strconv.Itoa(len(buf.Bytes())))
-	(*w).Header().Set(contentTypeKey, appJSONValue)
+	w.Header().Set(contentLenKey, strconv.Itoa(len(buf.Bytes())))
+	w.Header().Set(contentTypeKey, appJSONValue)
 
 	code := getStatusCode(resp.GetStatus())
-	(*w).WriteHeader(code)
-	_, err := (*w).Write(buf.Bytes())
+	w.WriteHeader(code)
+	_, err := w.Write(buf.Bytes())
 	if err != nil {
 		return err
 	}
@@ -89,7 +99,7 @@ func extractJWTCredsOnly[ReqT IWithJWTUserCreds](r *http.Request, v ReqT) error 
 	ctxIdVal := r.Context().Value(ds.UserIDKey)
 	ctxRoleVal := r.Context().Value(ds.UserRoleKey)
 	if ctxIdVal == nil || ctxRoleVal == nil {
-		return fmt.Errorf("struct expected to get jwt creds but was not privided")
+		return fmt.Errorf("struct expected to get jwt creds but was not provided")
 	}
 
 	id, okId := ctxIdVal.(int64)
@@ -167,7 +177,7 @@ func Exec[ReqT any, RespT IWithStatus](a ExecArgs[ReqT, RespT]) {
 
 	if err := a.responseWriter(a.httpResponse, resp); err != nil {
 		msg := "failed writing response"
-		http.Error(*a.httpResponse, msg, http.StatusInternalServerError)
+		http.Error(a.httpResponse, msg, http.StatusInternalServerError)
 		a.api.logger.ErrorKV(msg, "error", err.Error(), "request", req)
 	}
 }

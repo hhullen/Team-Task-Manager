@@ -45,7 +45,7 @@ func (a *API) CreateTask(w http.ResponseWriter, r *http.Request) {
 		serviceFunc:      a.appService.AddNewTask,
 		responseWriter:   writeJsonResponse[*ds.CreateTaskResponse],
 		requestExtractor: extractJsonBody[*ds.CreateTaskRequest],
-		httpResponse:     &w,
+		httpResponse:     w,
 		httpRequest:      r,
 		api:              a,
 	})
@@ -80,7 +80,7 @@ func (a *API) GetTasks(w http.ResponseWriter, r *http.Request) {
 			}
 			return supports.StructValidator().Struct(v)
 		},
-		httpResponse: &w,
+		httpResponse: w,
 		httpRequest:  r,
 		api:          a,
 	})
@@ -113,11 +113,16 @@ func (a *API) UpdateTask(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				return err
 			}
+			err = extractJsonBody(r, v)
+			if err != nil {
+				return err
+			}
 
 			v.TaskId = id
-			return extractJsonBody(r, v)
+
+			return nil
 		},
-		httpResponse: &w,
+		httpResponse: w,
 		httpRequest:  r,
 		api:          a,
 	})
@@ -151,10 +156,16 @@ func (a *API) GetTaskHistory(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 
+			err = extractSchemaQuery(r, v)
+			if err != nil {
+				return err
+			}
+
 			v.TaskId = id
-			return extractSchemaQuery(r, v)
+
+			return nil
 		},
-		httpResponse: &w,
+		httpResponse: w,
 		httpRequest:  r,
 		api:          a,
 	})
@@ -188,10 +199,16 @@ func (a *API) AddTaskComment(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 
+			err = extractJsonBody(r, v)
+			if err != nil {
+				return err
+			}
+
 			v.TaskId = id
-			return extractJsonBody(r, v)
+
+			return nil
 		},
-		httpResponse: &w,
+		httpResponse: w,
 		httpRequest:  r,
 		api:          a,
 	})

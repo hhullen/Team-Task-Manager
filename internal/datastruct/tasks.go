@@ -115,7 +115,7 @@ type DBUpdateTaskRequest struct {
 
 type UpdateTaskRequest struct {
 	JWTCreds
-	TaskId        int64      `json:"task_id" validate:"required" example:"1"`
+	TaskId        int64      `uri:"task_id" validate:"required" example:"1" swaggerignore:"true"`
 	AssigneeLogin string     `json:"assignee_login" validate:"required" example:"VaKadyk359"`
 	Subject       string     `json:"subject" validate:"required" example:"service endpoint"`
 	Description   string     `json:"description" validate:"required" example:"add new service endpoint"`

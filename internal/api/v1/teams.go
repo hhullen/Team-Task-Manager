@@ -38,7 +38,7 @@ func (a *API) CreateTeam(w http.ResponseWriter, r *http.Request) {
 		serviceFunc:      a.appService.CreateTeam,
 		responseWriter:   writeJsonResponse[*ds.CreateTeamResponse],
 		requestExtractor: extractJsonBody[*ds.CreateTeamRequest],
-		httpResponse:     &w,
+		httpResponse:     w,
 		httpRequest:      r,
 		api:              a,
 	})
@@ -60,7 +60,7 @@ func (a *API) ListUserTeams(w http.ResponseWriter, r *http.Request) {
 		serviceFunc:      a.appService.ListUserTeams,
 		responseWriter:   writeJsonResponse[*ds.ListUserTeamsResponse],
 		requestExtractor: extractJWTCredsOnly[*ds.ListUserTeamsRequest],
-		httpResponse:     &w,
+		httpResponse:     w,
 		httpRequest:      r,
 		api:              a,
 	})
@@ -94,10 +94,16 @@ func (a *API) InviteUserToTeam(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 
+			err = extractJsonBody(r, v)
+			if err != nil {
+				return err
+			}
+
 			v.TeamId = id
-			return extractJsonBody(r, v)
+
+			return nil
 		},
-		httpResponse: &w,
+		httpResponse: w,
 		httpRequest:  r,
 		api:          a,
 	})

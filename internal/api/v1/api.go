@@ -18,6 +18,9 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+//go:generate mockgen -destination=api_mock.go -package=api . IAppService,IAuthService,ISecretProvider,IServer,IRouter,ILogger,ILimiter
+//go:generate mockgen -destination=http_mock.go -package=api net/http Handler
+
 const (
 	readTimeout  = time.Second * 5
 	writeTimeout = time.Second * 5
@@ -97,16 +100,6 @@ type ILogger interface {
 
 type ILimiter interface {
 	Allow(key string, perSecond int) (bool, error)
-}
-
-type ExecArgs[ReqT any, RespT IWithStatus] struct {
-	api              *API
-	serviceFunc      func(*ReqT) *RespT
-	requestExtractor func(r *http.Request, v *ReqT) error
-	responseWriter   func(w *http.ResponseWriter, v *RespT) error
-	httpRequest      *http.Request
-	httpResponse     *http.ResponseWriter
-	validator        func(s *ReqT) error
 }
 
 type ResponseWriterInterceptor struct {

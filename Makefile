@@ -66,7 +66,7 @@ $(MOCKGEN_BIN):
 	go install -a github.com/golang/mock/mockgen@latest
 
 generate-mocks: $(MOCKGEN_BIN)
-	go generate ./...
+	go generate -run "mockgen" ./...
 
 $(SWAG_BIN):
 	go install -a github.com/swaggo/swag/cmd/swag@latest

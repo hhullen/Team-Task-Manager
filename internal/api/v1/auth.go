@@ -39,7 +39,7 @@ func (a *API) Register(w http.ResponseWriter, r *http.Request) {
 		serviceFunc:      a.authService.RegisterUser,
 		responseWriter:   writeJsonResponse[*ds.RegisterResponse],
 		requestExtractor: extractJsonBody[*ds.RegisterRequest],
-		httpResponse:     &w,
+		httpResponse:     w,
 		httpRequest:      r,
 		api:              a,
 	})
@@ -59,7 +59,7 @@ func (a *API) Register(w http.ResponseWriter, r *http.Request) {
 func (a *API) Login(w http.ResponseWriter, r *http.Request) {
 	Exec(ExecArgs[ds.LoginRequest, ds.LoginResponse]{
 		serviceFunc: a.authService.LoginUser,
-		responseWriter: func(w *http.ResponseWriter, v *ds.LoginResponse) error {
+		responseWriter: func(w http.ResponseWriter, v *ds.LoginResponse) error {
 			cookie := &http.Cookie{
 				Name:     "refresh_token",
 				Value:    v.RefreshToken.RefreshToken,
@@ -71,7 +71,7 @@ func (a *API) Login(w http.ResponseWriter, r *http.Request) {
 				SameSite: http.SameSiteStrictMode,
 			}
 
-			http.SetCookie(*w, cookie)
+			http.SetCookie(w, cookie)
 
 			v.RefreshToken.RefreshToken = ""
 
@@ -79,7 +79,7 @@ func (a *API) Login(w http.ResponseWriter, r *http.Request) {
 
 		},
 		requestExtractor: extractJsonBody[*ds.LoginRequest],
-		httpResponse:     &w,
+		httpResponse:     w,
 		httpRequest:      r,
 		api:              a,
 	})
@@ -97,7 +97,7 @@ func (a *API) Login(w http.ResponseWriter, r *http.Request) {
 func (a *API) Refresh(w http.ResponseWriter, r *http.Request) {
 	Exec(ExecArgs[ds.RefreshRequest, ds.RefreshResponse]{
 		serviceFunc: a.authService.Refresh,
-		responseWriter: func(w *http.ResponseWriter, v *ds.RefreshResponse) error {
+		responseWriter: func(w http.ResponseWriter, v *ds.RefreshResponse) error {
 			cookie := &http.Cookie{
 				Name:     "refresh_token",
 				Value:    v.RefreshToken.RefreshToken,
@@ -109,7 +109,7 @@ func (a *API) Refresh(w http.ResponseWriter, r *http.Request) {
 				SameSite: http.SameSiteStrictMode,
 			}
 
-			http.SetCookie(*w, cookie)
+			http.SetCookie(w, cookie)
 
 			v.RefreshToken.RefreshToken = ""
 
@@ -127,7 +127,7 @@ func (a *API) Refresh(w http.ResponseWriter, r *http.Request) {
 			v.RefreshToken.RefreshToken = token.Value
 			return nil
 		},
-		httpResponse: &w,
+		httpResponse: w,
 		httpRequest:  r,
 		api:          a,
 	})
