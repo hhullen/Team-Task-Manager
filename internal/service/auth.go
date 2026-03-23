@@ -33,6 +33,7 @@ func (s *Service) LoginUser(req *ds.LoginRequest) *ds.LoginResponse {
 	identities, exist, err := s.storageAuth.GetAuthIdentitiesByLogin(req.Login)
 	if err != nil {
 		s.logger.ErrorKV("LoginUser.GetAuthIdentitiesByLogin", "error", err.Error())
+		return nil
 	}
 
 	if !exist {

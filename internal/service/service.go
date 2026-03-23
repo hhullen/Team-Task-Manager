@@ -11,6 +11,8 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+//go:generate mockgen -destination=service_mock.go -package=service . ILogger,ICache,IAuthStorage,IAppStorage,ISecretProvider
+
 const (
 	serviceName = "team-tast-manager"
 )
