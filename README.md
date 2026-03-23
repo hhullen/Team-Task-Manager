@@ -53,4 +53,6 @@ When service is running the OpenAPI page with all implemented endpoints is avail
 - `make service-rebuild` rebuild docker compose image
 - `make coverage-info` shows unit testing coverage in terminal
 - `make coverage-html` shows unit testing coverage in browser
+- `make unit-test` runs unit tests
+- `make integration-test` runs integration tests
 - `make clean` removes compiled binaries
